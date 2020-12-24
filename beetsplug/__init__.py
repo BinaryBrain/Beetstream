@@ -418,7 +418,7 @@ class WebPlugin(BeetsPlugin):
         super(WebPlugin, self).__init__()
         self.config.add({
             'host': u'127.0.0.1',
-            'port': 8337,
+            'port': 8080,
             'cors': '',
             'cors_supports_credentials': False,
             'reverse_proxy': False,
@@ -426,7 +426,7 @@ class WebPlugin(BeetsPlugin):
         })
 
     def commands(self):
-        cmd = ui.Subcommand('web', help=u'start a Web interface')
+        cmd = ui.Subcommand('subsonic', help=u'expose a SubSonic API')
         cmd.parser.add_option(u'-d', u'--debug', action='store_true',
                               default=False, help=u'debug mode')
 
