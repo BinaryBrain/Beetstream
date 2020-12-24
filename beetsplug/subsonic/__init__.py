@@ -263,7 +263,7 @@ app.url_map.converters['everything'] = EverythingConverter
 def before_request():
     g.lib = app.config['lib']
 
-# Ping
+# System
 
 @app.route('/rest/ping.view', methods=["GET", "POST"])
 def ping():
@@ -271,6 +271,20 @@ def ping():
         "subsonic-response": {
             "status": "ok",
             "version": "1.16.1"
+        }
+    })
+
+@app.route('/rest/getLicense.view', methods=["GET", "POST"])
+def getLicense():
+    return flask.jsonify({
+        "subsonic-response": {
+            "status": "ok",
+            "version": "1.16.1",
+            "license" : {
+                "valid" : True,
+                "email" : "me@sachabron.ch",
+                "trialExpires" : "3000-01-01T00:00:00.000Z"
+            }
         }
     })
 
