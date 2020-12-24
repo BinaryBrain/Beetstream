@@ -263,6 +263,16 @@ app.url_map.converters['everything'] = EverythingConverter
 def before_request():
     g.lib = app.config['lib']
 
+# Ping
+
+@app.route('/rest/ping.view', methods=["GET", "POST"])
+def ping():
+    return flask.jsonify({
+        "subsonic-response": {
+            "status": "ok",
+            "version": "1.16.1"
+        }
+    })
 
 # Items.
 
