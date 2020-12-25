@@ -28,8 +28,12 @@ from unidecode import unidecode
 import json
 import base64
 from datetime import datetime
+import unicodedata
 
 # Utilities.
+
+def strip_accents(s):
+    return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
 
 def timestamp_to_iso(timestamp):
     return datetime.fromtimestamp(int(timestamp)).isoformat()
@@ -424,6 +428,7 @@ def all_artists():
     with g.lib.transaction() as tx:
         rows = tx.query("SELECT DISTINCT albumartist FROM albums")
     all_artists = [row[0] for row in rows]
+    all_artists.sort(key=lambda name: strip_accents(name).upper())
 
     def map_artist(artist_name):
         return {
