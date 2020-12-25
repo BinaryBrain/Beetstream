@@ -21,7 +21,7 @@ from beets import ui
 from beets import util
 import beets.library
 import flask
-from flask import g, jsonify, request
+from flask import g, jsonify, request, send_from_directory
 from werkzeug.routing import BaseConverter, PathConverter
 import os
 from unidecode import unidecode
@@ -390,7 +390,7 @@ def album_query(queries):
 def album_art(album_id):
     album = g.lib.get_album(album_id)
     if album and album.artpath:
-        return flask.send_file(album.artpath.decode())
+        return flask.send_file(album.artpath.decode('utf-8'))
     else:
         return flask.abort(404)
 
@@ -405,6 +405,17 @@ def album_unique_field_values(key):
         return flask.abort(404)
     return flask.jsonify(values=values)
 
+
+@app.route('/rest/getCoverArt.view')
+def cover_art_file():
+    album_id = int(request.args.get('id'))
+    album = g.lib.get_album(album_id)
+    if album and album.artpath:
+        print(album.artpath)
+        pic = album.artpath.decode('utf-8')
+        return flask.send_file(pic)
+    else:
+        return flask.abort(404)
 
 # Artists.
 
@@ -442,7 +453,7 @@ def artist():
             "name" : album["album"],
             "artist" : album["albumartist"],
             "artistId" : album["albumartist"],
-            "coverArt" : album["artpath"] or "",
+            "coverArt" : album["id"] or "",
             "songCount" : 1, # TODO
             "duration" : 1, # TODO
             "playCount" : 1, # TODO
@@ -482,9 +493,9 @@ def home():
 
 # Plugin hook.
 
-class WebPlugin(BeetsPlugin):
+class SubSonicPlugin(BeetsPlugin):
     def __init__(self):
-        super(WebPlugin, self).__init__()
+        super(SubSonicPlugin, self).__init__()
         self.config.add({
             'host': u'127.0.0.1',
             'port': 8080,
