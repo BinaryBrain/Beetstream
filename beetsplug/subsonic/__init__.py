@@ -21,15 +21,27 @@ from beets import ui
 from beets import util
 import beets.library
 import flask
-from flask import g, jsonify
+from flask import g, jsonify, request
 from werkzeug.routing import BaseConverter, PathConverter
 import os
 from unidecode import unidecode
 import json
 import base64
-
+from datetime import datetime
 
 # Utilities.
+
+def timestamp_to_iso(timestamp):
+    return datetime.fromtimestamp(int(timestamp)).isoformat()
+
+def wrap_res(key, json):
+    return {
+        "subsonic-response": {
+            "status": "ok",
+            "version": "1.16.1",
+            key: json
+        }
+    }
 
 def _rep(obj, expand=False):
     """Get a flat -- i.e., JSON-ish -- representation of a beets Item or
@@ -267,26 +279,15 @@ def before_request():
 
 @app.route('/rest/ping.view', methods=["GET", "POST"])
 def ping():
-    return flask.jsonify({
-        "subsonic-response": {
-            "status": "ok",
-            "version": "1.16.1"
-        }
-    })
+    return flask.jsonify(wrap_res("", {}))
 
 @app.route('/rest/getLicense.view', methods=["GET", "POST"])
 def getLicense():
-    return flask.jsonify({
-        "subsonic-response": {
-            "status": "ok",
-            "version": "1.16.1",
-            "license" : {
-                "valid" : True,
-                "email" : "me@sachabron.ch",
-                "trialExpires" : "3000-01-01T00:00:00.000Z"
-            }
-        }
-    })
+    return flask.jsonify(wrap_res("license", {
+        "valid" : True,
+        "email" : "me@sachabron.ch",
+        "trialExpires" : "3000-01-01T00:00:00.000Z"
+    }))
 
 # Items.
 
@@ -407,12 +408,56 @@ def album_unique_field_values(key):
 
 # Artists.
 
-@app.route('/artist/')
+@app.route('/rest/getArtists.view')
 def all_artists():
     with g.lib.transaction() as tx:
         rows = tx.query("SELECT DISTINCT albumartist FROM albums")
     all_artists = [row[0] for row in rows]
-    return flask.jsonify(artist_names=all_artists)
+
+    def map_artist(artist_name):
+        return {
+            "id": artist_name,
+            "name": artist_name,
+            # "coverArt": "artist_name",
+            # "albumCount": 1,
+            # "artistImageUrl": "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg",
+        }
+
+    return flask.jsonify(wrap_res("artists", {
+        "ignoredArticles": "The El La Los Las Le",
+        "index": [{
+            "name": "*",
+            "artist": map(map_artist, all_artists)
+        }]
+    }))
+
+@app.route('/rest/getArtist.view')
+def artist():
+    artist_name = request.args.get('id')
+
+    def map_album(album):
+        album = dict(album)
+        return {
+            "id" : album["id"],
+            "name" : album["album"],
+            "artist" : album["albumartist"],
+            "artistId" : album["albumartist"],
+            "coverArt" : album["artpath"] or "",
+            "songCount" : 1, # TODO
+            "duration" : 1, # TODO
+            "playCount" : 1, # TODO
+            "created" : timestamp_to_iso(album["added"]),
+            "year" : album["year"],
+            "genre" : album["genre"]
+        }
+
+    albums = g.lib.albums(artist_name)
+
+    return flask.jsonify(wrap_res("artist", {
+        "id": artist_name,
+        "artist_name": artist_name,
+        "album": map(map_album, albums)
+    }))
 
 
 # Library information.
