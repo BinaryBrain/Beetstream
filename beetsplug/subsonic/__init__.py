@@ -29,6 +29,7 @@ import json
 import base64
 from datetime import datetime
 import unicodedata
+import mimetypes
 
 # Utilities.
 
@@ -288,9 +289,9 @@ def ping():
 @app.route('/rest/getLicense.view', methods=["GET", "POST"])
 def getLicense():
     return flask.jsonify(wrap_res("license", {
-        "valid" : True,
-        "email" : "me@sachabron.ch",
-        "trialExpires" : "3000-01-01T00:00:00.000Z"
+        "valid": True,
+        "email": "me@sachabron.ch",
+        "trialExpires": "3000-01-01T00:00:00.000Z"
     }))
 
 # Items.
@@ -376,7 +377,6 @@ def item_unique_field_values(key):
 def get_album(id):
     return g.lib.get_album(id)
 
-
 @app.route('/album/')
 @app.route('/album/query/')
 @resource_list('albums')
@@ -409,6 +409,42 @@ def album_unique_field_values(key):
         return flask.abort(404)
     return flask.jsonify(values=values)
 
+@app.route('/rest/getAlbum.view')
+def get_album():
+    id = int(request.args.get('id'))
+
+    songs = g.lib.get_album(id).items()
+
+    def map_song(song):
+        song = dict(song)
+        return {
+            "id": song["id"],
+            "parent": "71", # TODO
+            "isDir": False,
+            "title": song["title"],
+            "album": song["album"],
+            "artist": song["albumartist"],
+            "track": song["track"],
+            "year": song["year"],
+            "genre": song["genre"],
+            "coverArt": song["album_id"] or "",
+            # "size": 3612800,
+            "contentType": mimetypes.guess_type(song["path"])[0],
+            "suffix": song["format"],
+            "duration": song["length"],
+            "bitRate": song["bitrate"]/1000,
+            "path": song["path"],
+            "playCount": 1745,
+            "created": timestamp_to_iso(song["added"]),
+            # "starred": "2019-10-23T04:41:17.107Z",
+            "albumId": song["album_id"],
+            "artistId": song["albumartist"],
+            "type": "music"
+        }
+
+    return flask.jsonify(wrap_res("album", {
+        "song": map(map_song, songs)
+    }))
 
 @app.route('/rest/getCoverArt.view')
 def cover_art_file():
@@ -454,17 +490,17 @@ def artist():
     def map_album(album):
         album = dict(album)
         return {
-            "id" : album["id"],
-            "name" : album["album"],
-            "artist" : album["albumartist"],
-            "artistId" : album["albumartist"],
-            "coverArt" : album["id"] or "",
-            "songCount" : 1, # TODO
-            "duration" : 1, # TODO
-            "playCount" : 1, # TODO
-            "created" : timestamp_to_iso(album["added"]),
-            "year" : album["year"],
-            "genre" : album["genre"]
+            "id": album["id"],
+            "name": album["album"],
+            "artist": album["albumartist"],
+            "artistId": album["albumartist"],
+            "coverArt": album["id"] or "",
+            "songCount": 1, # TODO
+            "duration": 1, # TODO
+            "playCount": 1, # TODO
+            "created": timestamp_to_iso(album["added"]),
+            "year": album["year"],
+            "genre": album["genre"]
         }
 
     albums = g.lib.albums(artist_name)
