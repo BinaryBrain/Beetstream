@@ -290,7 +290,7 @@ def ping():
 def getLicense():
     return flask.jsonify(wrap_res("license", {
         "valid": True,
-        "email": "me@sachabron.ch",
+        "email": "foo@example.com",
         "trialExpires": "3000-01-01T00:00:00.000Z"
     }))
 
@@ -538,6 +538,31 @@ def stats():
         'albums': album_rows[0][0],
     })
 
+# Users.
+
+@app.route('/rest/getUser.view')
+def user():
+    username = request.args.get('username')
+
+    return flask.jsonify(wrap_res("user", {
+        "username" : "admin",
+        "email" : "foo@example.com",
+        "scrobblingEnabled" : True,
+        "adminRole" : True,
+        "settingsRole" : True,
+        "downloadRole" : True,
+        "uploadRole" : True,
+        "playlistRole" : True,
+        "coverArtRole" : True,
+        "commentRole" : True,
+        "podcastRole" : True,
+        "streamRole" : True,
+        "jukeboxRole" : True,
+        "shareRole" : True,
+        "videoConversionRole" : True,
+        "avatarLastChanged" : "1970-01-01T00:00:00.000Z",
+        "folder" : [ 0 ]
+    }))
 
 # UI.
 
