@@ -48,6 +48,23 @@ def wrap_res(key, json):
         }
     }
 
+
+def map_album(album):
+    album = dict(album)
+    return {
+        "id": album["id"],
+        "name": album["album"],
+        "artist": album["albumartist"],
+        "artistId": album["albumartist"],
+        "coverArt": album["id"] or "",
+        "songCount": 1, # TODO
+        "duration": 1, # TODO
+        "playCount": 1, # TODO
+        "created": timestamp_to_iso(album["added"]),
+        "year": album["year"],
+        "genre": album["genre"]
+    }
+
 def _rep(obj, expand=False):
     """Get a flat -- i.e., JSON-ish -- representation of a beets Item or
     Album object. For Albums, `expand` dictates whether tracks are
@@ -460,6 +477,20 @@ def get_album():
         "song": map(map_song, songs)
     }))
 
+@app.route('/rest/getAlbumList2.view')
+def album_list_2():
+    # TODO possibleTypes = ['random', 'newest', 'frequent', 'recent', 'starred', 'alphabeticalByName', 'alphabeticalByArtist', 'byYear', 'byGenre']
+    sort_by = request.args.get('type') # TODO
+    size = int(request.args.get('size')) # TODO
+    offset = int(request.args.get('offset')) # TODO
+
+    albums = list(g.lib.albums())
+    albums.sort(key=lambda album: strip_accents(dict(album)['album']).upper())
+
+    return flask.jsonify(wrap_res("albumList2", {
+        "album": map(map_album, albums)
+    }))
+
 @app.route('/rest/getCoverArt.view')
 def cover_art_file():
     album_id = int(request.args.get('id'))
@@ -500,23 +531,6 @@ def all_artists():
 @app.route('/rest/getArtist.view')
 def artist():
     artist_name = request.args.get('id')
-
-    def map_album(album):
-        album = dict(album)
-        return {
-            "id": album["id"],
-            "name": album["album"],
-            "artist": album["albumartist"],
-            "artistId": album["albumartist"],
-            "coverArt": album["id"] or "",
-            "songCount": 1, # TODO
-            "duration": 1, # TODO
-            "playCount": 1, # TODO
-            "created": timestamp_to_iso(album["added"]),
-            "year": album["year"],
-            "genre": album["genre"]
-        }
-
     albums = g.lib.albums(artist_name)
 
     return flask.jsonify(wrap_res("artist", {
