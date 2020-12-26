@@ -21,7 +21,7 @@ from beets import ui
 from beets import util
 import beets.library
 import flask
-from flask import g, jsonify, request, send_from_directory
+from flask import g, jsonify, request, send_from_directory, Response
 from werkzeug.routing import BaseConverter, PathConverter
 import os
 from unidecode import unidecode
@@ -342,6 +342,20 @@ def item_file(item_id):
     response.headers['Content-Length'] = os.path.getsize(item_path)
     return response
 
+@app.route('/rest/stream.view')
+def stream_song():
+    id = int(request.args.get('id'))
+    maxBitrate = int(request.args.get('maxBitRate'))
+    item = g.lib.get_item(id)
+    print(item.path)
+
+    def generate():
+        with open(item.path, "rb") as songFile:
+            data = songFile.read(1024)
+            while data:
+                yield data
+                data = songFile.read(1024)
+    return Response(generate(), mimetype=mimetypes.guess_type(item.path)[0])
 
 @app.route('/item/query/<query:queries>', methods=["GET", "DELETE", "PATCH"])
 @resource_query('items', patchable=True)
