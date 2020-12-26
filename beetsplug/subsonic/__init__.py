@@ -30,6 +30,7 @@ import base64
 from datetime import datetime
 import unicodedata
 import mimetypes
+from beets.random import random_objs
 
 # Utilities.
 
@@ -63,6 +64,33 @@ def map_album(album):
         "created": timestamp_to_iso(album["added"]),
         "year": album["year"],
         "genre": album["genre"]
+    }
+
+def map_song(song):
+    song = dict(song)
+    return {
+        "id": song["id"],
+        "parent": "71", # TODO
+        "isDir": False,
+        "title": song["title"],
+        "album": song["album"],
+        "artist": song["albumartist"],
+        "track": song["track"],
+        "year": song["year"],
+        "genre": song["genre"],
+        "coverArt": song["album_id"] or "",
+        # "size": 3612800,
+        "contentType": mimetypes.guess_type(song["path"])[0],
+        "suffix": song["format"],
+        "duration": song["length"],
+        "bitRate": song["bitrate"]/1000,
+        "path": song["path"],
+        "playCount": 1745,
+        "created": timestamp_to_iso(song["added"]),
+        # "starred": "2019-10-23T04:41:17.107Z",
+        "albumId": song["album_id"],
+        "artistId": song["albumartist"],
+        "type": "music"
     }
 
 def _rep(obj, expand=False):
@@ -359,7 +387,7 @@ def item_file(item_id):
     response.headers['Content-Length'] = os.path.getsize(item_path)
     return response
 
-@app.route('/rest/stream.view')
+@app.route('/rest/stream.view', methods=["GET", "POST"])
 def stream_song():
     id = int(request.args.get('id'))
     maxBitrate = int(request.args.get('maxBitRate'))
@@ -373,6 +401,16 @@ def stream_song():
                 yield data
                 data = songFile.read(1024)
     return Response(generate(), mimetype=mimetypes.guess_type(item.path)[0])
+
+@app.route('/rest/getRandomSongs.view', methods=["GET", "POST"])
+def random_songs():
+    size = int(request.args.get('size'))
+    songs = list(g.lib.items())
+    songs = random_objs(songs, -1, size)
+
+    return flask.jsonify(wrap_res("randomSongs", {
+        "song": map(map_song, songs)
+    }))
 
 @app.route('/item/query/<query:queries>', methods=["GET", "DELETE", "PATCH"])
 @resource_query('items', patchable=True)
@@ -440,44 +478,17 @@ def album_unique_field_values(key):
         return flask.abort(404)
     return flask.jsonify(values=values)
 
-@app.route('/rest/getAlbum.view')
+@app.route('/rest/getAlbum.view', methods=["GET", "POST"])
 def get_album():
     id = int(request.args.get('id'))
 
     songs = g.lib.get_album(id).items()
 
-    def map_song(song):
-        song = dict(song)
-        return {
-            "id": song["id"],
-            "parent": "71", # TODO
-            "isDir": False,
-            "title": song["title"],
-            "album": song["album"],
-            "artist": song["albumartist"],
-            "track": song["track"],
-            "year": song["year"],
-            "genre": song["genre"],
-            "coverArt": song["album_id"] or "",
-            # "size": 3612800,
-            "contentType": mimetypes.guess_type(song["path"])[0],
-            "suffix": song["format"],
-            "duration": song["length"],
-            "bitRate": song["bitrate"]/1000,
-            "path": song["path"],
-            "playCount": 1745,
-            "created": timestamp_to_iso(song["added"]),
-            # "starred": "2019-10-23T04:41:17.107Z",
-            "albumId": song["album_id"],
-            "artistId": song["albumartist"],
-            "type": "music"
-        }
-
     return flask.jsonify(wrap_res("album", {
         "song": map(map_song, songs)
     }))
 
-@app.route('/rest/getAlbumList2.view')
+@app.route('/rest/getAlbumList2.view', methods=["GET", "POST"])
 def album_list_2():
     # TODO possibleTypes = ['random', 'newest', 'frequent', 'recent', 'starred', 'alphabeticalByName', 'alphabeticalByArtist', 'byYear', 'byGenre']
     sort_by = request.args.get('type') # TODO
@@ -491,7 +502,7 @@ def album_list_2():
         "album": map(map_album, albums)
     }))
 
-@app.route('/rest/getCoverArt.view')
+@app.route('/rest/getCoverArt.view', methods=["GET", "POST"])
 def cover_art_file():
     album_id = int(request.args.get('id'))
     album = g.lib.get_album(album_id)
@@ -504,7 +515,7 @@ def cover_art_file():
 
 # Artists.
 
-@app.route('/rest/getArtists.view')
+@app.route('/rest/getArtists.view', methods=["GET", "POST"])
 def all_artists():
     with g.lib.transaction() as tx:
         rows = tx.query("SELECT DISTINCT albumartist FROM albums")
@@ -528,7 +539,7 @@ def all_artists():
         }]
     }))
 
-@app.route('/rest/getArtist.view')
+@app.route('/rest/getArtist.view', methods=["GET", "POST"])
 def artist():
     artist_name = request.args.get('id')
     albums = g.lib.albums(artist_name)
@@ -554,7 +565,7 @@ def stats():
 
 # Users.
 
-@app.route('/rest/getUser.view')
+@app.route('/rest/getUser.view', methods=["GET", "POST"])
 def user():
     username = request.args.get('username')
 
