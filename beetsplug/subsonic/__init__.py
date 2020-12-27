@@ -425,6 +425,12 @@ def playlists():
         "playlist": []
     }))
 
+# TODO link with Last.fm or ListenBrainz
+@app.route('/rest/getTopSongs', methods=["GET", "POST"])
+@app.route('/rest/getTopSongs.view', methods=["GET", "POST"])
+def top_songs():
+    return flask.jsonify(wrap_res("topSongs", {}))
+
 @app.route('/rest/getStarred', methods=["GET", "POST"])
 @app.route('/rest/getStarred.view', methods=["GET", "POST"])
 def starred_songs():
