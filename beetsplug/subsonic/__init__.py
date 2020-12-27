@@ -31,6 +31,7 @@ from datetime import datetime
 import unicodedata
 import mimetypes
 from beets.random import random_objs
+import time
 
 # Utilities.
 
@@ -578,6 +579,30 @@ def all_artists():
 
     return flask.jsonify(wrap_res("artists", {
         "ignoredArticles": "The El La Los Las Le",
+        "index": [{
+            "name": "*",
+            "artist": map(map_artist, all_artists)
+        }]
+    }))
+
+@app.route('/rest/getIndexes', methods=["GET", "POST"])
+@app.route('/rest/getIndexes.view', methods=["GET", "POST"])
+def indexes():
+    with g.lib.transaction() as tx:
+        rows = tx.query("SELECT DISTINCT albumartist FROM albums")
+    all_artists = [row[0] for row in rows]
+    all_artists.sort(key=lambda name: strip_accents(name).upper())
+
+    def map_artist(artist_name):
+        return {
+            "id": artist_name,
+            "name": artist_name,
+            # "artistImageUrl": "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg",
+        }
+
+    return flask.jsonify(wrap_res("indexes", {
+        "ignoredArticles": "The El La Los Las Le",
+        "lastModified": int(time.time() * 1000),
         "index": [{
             "name": "*",
             "artist": map(map_artist, all_artists)
