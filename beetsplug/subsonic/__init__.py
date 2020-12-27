@@ -416,6 +416,19 @@ def random_songs():
         "song": map(map_song, songs)
     }))
 
+@app.route('/rest/search3', methods=["GET", "POST"])
+@app.route('/rest/search3.view', methods=["GET", "POST"])
+def search3():
+    query = request.args.get('query')
+    songs = list(g.lib.items(query))
+    artistCount = request.args.get('artistCount')
+    albumCount = request.args.get('albumCount')
+    songCount = request.args.get('songCount')
+    return flask.jsonify(wrap_res("searchResult3", {
+        "song": map(map_song, songs)
+    }))
+
+
 @app.route('/item/query/<query:queries>', methods=["GET", "DELETE", "PATCH"])
 @resource_query('items', patchable=True)
 def item_query(queries):
