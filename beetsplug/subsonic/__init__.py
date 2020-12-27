@@ -394,7 +394,7 @@ def item_file(item_id):
 @app.route('/rest/stream.view', methods=["GET", "POST"])
 def stream_song():
     id = int(request.args.get('id'))
-    maxBitrate = int(request.args.get('maxBitRate'))
+    maxBitrate = int(request.args.get('maxBitRate') or 0)
     item = g.lib.get_item(id)
     print(item.path)
 
@@ -409,7 +409,7 @@ def stream_song():
 @app.route('/rest/getRandomSongs', methods=["GET", "POST"])
 @app.route('/rest/getRandomSongs.view', methods=["GET", "POST"])
 def random_songs():
-    size = int(request.args.get('size'))
+    size = int(request.args.get('size') or 0)
     songs = list(g.lib.items())
     songs = random_objs(songs, -1, size)
 
@@ -448,7 +448,7 @@ def starred2_songs():
 @app.route('/rest/search3', methods=["GET", "POST"])
 @app.route('/rest/search3.view', methods=["GET", "POST"])
 def search3():
-    query = request.args.get('query')
+    query = request.args.get('query') or ""
     songs = list(g.lib.items(query))
     artistCount = request.args.get('artistCount')
     albumCount = request.args.get('albumCount')
@@ -549,9 +549,9 @@ def get_album():
 @app.route('/rest/getAlbumList2.view', methods=["GET", "POST"])
 def album_list_2():
     # TODO possibleTypes = ['random', 'newest', 'frequent', 'recent', 'starred', 'alphabeticalByName', 'alphabeticalByArtist', 'byYear', 'byGenre']
-    sort_by = request.args.get('type') # TODO
-    size = int(request.args.get('size')) # TODO
-    offset = int(request.args.get('offset')) # TODO
+    sort_by = request.args.get('type') or 'alphabeticalByName' # TODO
+    size = int(request.args.get('size') or 0) # TODO
+    offset = int(request.args.get('offset') or 0) # TODO
 
     albums = list(g.lib.albums())
     albums.sort(key=lambda album: strip_accents(dict(album)['album']).upper())
@@ -653,8 +653,6 @@ def stats():
 @app.route('/rest/getUser', methods=["GET", "POST"])
 @app.route('/rest/getUser.view', methods=["GET", "POST"])
 def user():
-    username = request.args.get('username')
-
     return flask.jsonify(wrap_res("user", {
         "username" : "admin",
         "email" : "foo@example.com",
