@@ -88,7 +88,7 @@ def map_song(song):
         "playCount": 1745,
         "created": timestamp_to_iso(song["added"]),
         # "starred": "2019-10-23T04:41:17.107Z",
-        "albumId": song["album_id"],
+        "albumId": str(song["album_id"]),
         "artistId": song["albumartist"],
         "type": "music"
     }
@@ -327,10 +327,12 @@ def before_request():
 
 # System
 
+@app.route('/rest/ping', methods=["GET", "POST"])
 @app.route('/rest/ping.view', methods=["GET", "POST"])
 def ping():
     return flask.jsonify(wrap_res("", {}))
 
+@app.route('/rest/getLicense', methods=["GET", "POST"])
 @app.route('/rest/getLicense.view', methods=["GET", "POST"])
 def getLicense():
     return flask.jsonify(wrap_res("license", {
@@ -387,6 +389,7 @@ def item_file(item_id):
     response.headers['Content-Length'] = os.path.getsize(item_path)
     return response
 
+@app.route('/rest/stream', methods=["GET", "POST"])
 @app.route('/rest/stream.view', methods=["GET", "POST"])
 def stream_song():
     id = int(request.args.get('id'))
@@ -402,6 +405,7 @@ def stream_song():
                 data = songFile.read(1024)
     return Response(generate(), mimetype=mimetypes.guess_type(item.path)[0])
 
+@app.route('/rest/getRandomSongs', methods=["GET", "POST"])
 @app.route('/rest/getRandomSongs.view', methods=["GET", "POST"])
 def random_songs():
     size = int(request.args.get('size'))
@@ -478,6 +482,7 @@ def album_unique_field_values(key):
         return flask.abort(404)
     return flask.jsonify(values=values)
 
+@app.route('/rest/getAlbum', methods=["GET", "POST"])
 @app.route('/rest/getAlbum.view', methods=["GET", "POST"])
 def get_album():
     id = int(request.args.get('id'))
@@ -488,6 +493,7 @@ def get_album():
         "song": map(map_song, songs)
     }))
 
+@app.route('/rest/getAlbumList2', methods=["GET", "POST"])
 @app.route('/rest/getAlbumList2.view', methods=["GET", "POST"])
 def album_list_2():
     # TODO possibleTypes = ['random', 'newest', 'frequent', 'recent', 'starred', 'alphabeticalByName', 'alphabeticalByArtist', 'byYear', 'byGenre']
@@ -502,6 +508,7 @@ def album_list_2():
         "album": map(map_album, albums)
     }))
 
+@app.route('/rest/getCoverArt', methods=["GET", "POST"])
 @app.route('/rest/getCoverArt.view', methods=["GET", "POST"])
 def cover_art_file():
     album_id = int(request.args.get('id'))
@@ -515,6 +522,7 @@ def cover_art_file():
 
 # Artists.
 
+@app.route('/rest/getArtists', methods=["GET", "POST"])
 @app.route('/rest/getArtists.view', methods=["GET", "POST"])
 def all_artists():
     with g.lib.transaction() as tx:
@@ -539,6 +547,7 @@ def all_artists():
         }]
     }))
 
+@app.route('/rest/getArtist', methods=["GET", "POST"])
 @app.route('/rest/getArtist.view', methods=["GET", "POST"])
 def artist():
     artist_name = request.args.get('id')
@@ -565,6 +574,7 @@ def stats():
 
 # Users.
 
+@app.route('/rest/getUser', methods=["GET", "POST"])
 @app.route('/rest/getUser.view', methods=["GET", "POST"])
 def user():
     username = request.args.get('username')
