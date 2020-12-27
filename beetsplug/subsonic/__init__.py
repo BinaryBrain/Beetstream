@@ -417,6 +417,14 @@ def random_songs():
         "song": map(map_song, songs)
     }))
 
+# TODO link with https://beets.readthedocs.io/en/stable/plugins/playlist.html
+@app.route('/rest/getPlaylists', methods=["GET", "POST"])
+@app.route('/rest/getPlaylists.view', methods=["GET", "POST"])
+def playlists():
+    return flask.jsonify(wrap_res("playlists", {
+        "playlist": []
+    }))
+
 @app.route('/rest/getStarred', methods=["GET", "POST"])
 @app.route('/rest/getStarred.view', methods=["GET", "POST"])
 def starred_songs():
