@@ -416,6 +416,20 @@ def random_songs():
         "song": map(map_song, songs)
     }))
 
+@app.route('/rest/getStarred', methods=["GET", "POST"])
+@app.route('/rest/getStarred.view', methods=["GET", "POST"])
+def starred_songs():
+    return flask.jsonify(wrap_res("starred", {
+        "song": []
+    }))
+
+@app.route('/rest/getStarred2', methods=["GET", "POST"])
+@app.route('/rest/getStarred2.view', methods=["GET", "POST"])
+def starred2_songs():
+    return flask.jsonify(wrap_res("starred2", {
+        "song": []
+    }))
+
 @app.route('/rest/search3', methods=["GET", "POST"])
 @app.route('/rest/search3.view', methods=["GET", "POST"])
 def search3():
