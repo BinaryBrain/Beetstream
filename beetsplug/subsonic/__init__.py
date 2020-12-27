@@ -428,6 +428,16 @@ def search3():
         "song": map(map_song, songs)
     }))
 
+@app.route('/rest/getMusicFolders', methods=["GET", "POST"])
+@app.route('/rest/getMusicFolders.view', methods=["GET", "POST"])
+def music_folder():
+    return flask.jsonify(wrap_res("musicFolders", {
+        "musicFolder": [{
+            "id": 0,
+            "name": "Music"
+        }]
+    }))
+
 
 @app.route('/item/query/<query:queries>', methods=["GET", "DELETE", "PATCH"])
 @resource_query('items', patchable=True)
