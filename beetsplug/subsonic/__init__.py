@@ -596,13 +596,34 @@ def get_album():
 @app.route('/rest/getAlbumList2', methods=["GET", "POST"])
 @app.route('/rest/getAlbumList2.view', methods=["GET", "POST"])
 def album_list_2():
-    # TODO possibleTypes = ['random', 'newest', 'frequent', 'recent', 'starred', 'alphabeticalByName', 'alphabeticalByArtist', 'byYear', 'byGenre']
+    # TODO possibleTypes = ['random', 'frequent', 'recent', 'starred']
     sort_by = request.args.get('type') or 'alphabeticalByName' # TODO
     size = int(request.args.get('size') or 0) # TODO
     offset = int(request.args.get('offset') or 0) # TODO
+    fromYear = int(request.args.get('fromYear') or 0)
+    toYear = int(request.args.get('toYear') or 3000)
+    genre = request.args.get('genre')
 
     albums = list(g.lib.albums())
-    albums.sort(key=lambda album: strip_accents(dict(album)['album']).upper())
+
+    if sort_by == 'newest':
+        albums.sort(key=lambda album: int(dict(album)['added']), reverse=True)
+    elif sort_by == 'alphabeticalByName':
+        albums.sort(key=lambda album: strip_accents(dict(album)['album']).upper())
+    elif sort_by == 'alphabeticalByArtist':
+        albums.sort(key=lambda album: strip_accents(dict(album)['albumartist']).upper())
+    elif sort_by == 'alphabeticalByArtist':
+        albums.sort(key=lambda album: strip_accents(dict(album)['albumartist']).upper())
+    elif sort_by == 'byGenre':
+        albums = filter(lambda album: dict(album)['genre'].lower() == genre.lower(), albums)
+    elif sort_by == 'byYear':
+        # TODO use month and day data to sort
+        if fromYear <= toYear:
+            albums = list(filter(lambda album: dict(album)['year'] >= fromYear and dict(album)['year'] <= toYear, albums))
+            albums.sort(key=lambda album: int(dict(album)['year']))
+        else:
+            albums = list(filter(lambda album: dict(album)['year'] >= toYear and dict(album)['year'] <= fromYear, albums))
+            albums.sort(key=lambda album: int(dict(album)['year']), reverse=True)
 
     return flask.jsonify(wrap_res("albumList2", {
         "album": map(map_album, albums)
