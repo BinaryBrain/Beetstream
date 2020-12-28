@@ -572,6 +572,16 @@ def genres():
         "genre": map(map_genre, genres)
     }))
 
+@app.route('/rest/getSongsByGenre', methods=["GET", "POST"])
+@app.route('/rest/getSongsByGenre.view', methods=["GET", "POST"])
+def songs_by_genre():
+    genre = request.args.get('genre')
+    songs = list(g.lib.items('genre:' + genre))
+
+    return flask.jsonify(wrap_res("songsByGenre", {
+        "song": map(map_song, songs)
+    }))
+
 @app.route('/rest/getAlbum', methods=["GET", "POST"])
 @app.route('/rest/getAlbum.view', methods=["GET", "POST"])
 def get_album():
