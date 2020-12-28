@@ -331,7 +331,12 @@ def before_request():
 @app.route('/rest/ping', methods=["GET", "POST"])
 @app.route('/rest/ping.view', methods=["GET", "POST"])
 def ping():
-    return flask.jsonify(wrap_res("", {}))
+    return flask.jsonify({
+        "subsonic-response": {
+            "status": "ok",
+            "version": "1.16.1"
+        }
+    })
 
 @app.route('/rest/getLicense', methods=["GET", "POST"])
 @app.route('/rest/getLicense.view', methods=["GET", "POST"])
@@ -533,6 +538,39 @@ def album_unique_field_values(key):
     except KeyError:
         return flask.abort(404)
     return flask.jsonify(values=values)
+
+@app.route('/rest/getGenres', methods=["GET", "POST"])
+@app.route('/rest/getGenres.view', methods=["GET", "POST"])
+def genres():
+    with g.lib.transaction() as tx:
+        mixed_genres = list(tx.query("""
+            SELECT genre, COUNT(*) AS n_song, "" AS n_album FROM items GROUP BY genre
+            UNION ALL
+            SELECT genre, "" AS n_song, COUNT(*) AS n_album FROM albums GROUP BY genre
+        """))
+
+    genres = {}
+    for genre in mixed_genres:
+        key = genre[0]
+        if (not key in genres.keys()):
+            genres[key] = (genre[1], 0)
+        if (genre[2]):
+            genres[key] = (genres[key][0], genre[2])
+
+    genres = [(k, v[0], v[1]) for k, v in genres.items()]
+    genres.sort(key=lambda genre: strip_accents(genre[0]).upper())
+    genres = filter(lambda genre: genre[0] != u"", genres)
+
+    def map_genre(genre):
+        return {
+            "value": genre[0],
+            "songCount": genre[1],
+            "albumCount": genre[2]
+        }
+
+    return flask.jsonify(wrap_res("genres", {
+        "genre": map(map_genre, genres)
+    }))
 
 @app.route('/rest/getAlbum', methods=["GET", "POST"])
 @app.route('/rest/getAlbum.view', methods=["GET", "POST"])
