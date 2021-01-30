@@ -32,6 +32,8 @@ import unicodedata
 import mimetypes
 from beets.random import random_objs
 import time
+from json2xml import json2xml
+from json2xml.utils import readfromstring, readfromjson
 
 # Utilities.
 
@@ -81,11 +83,11 @@ def map_song(song):
         "genre": song["genre"],
         "coverArt": song["album_id"] or "",
         # "size": 3612800,
-        "contentType": mimetypes.guess_type(song["path"])[0],
+        "contentType": mimetypes.guess_type(song["path"].decode('utf-8'))[0],
         "suffix": song["format"],
         "duration": song["length"],
         "bitRate": song["bitrate"]/1000,
-        "path": song["path"],
+        "path": song["path"].decode('utf-8'),
         "playCount": 1745,
         "created": timestamp_to_iso(song["added"]),
         # "starred": "2019-10-23T04:41:17.107Z",
@@ -419,7 +421,7 @@ def random_songs():
     songs = random_objs(songs, -1, size)
 
     return flask.jsonify(wrap_res("randomSongs", {
-        "song": map(map_song, songs)
+        "song": list(map(map_song, songs))
     }))
 
 # TODO link with https://beets.readthedocs.io/en/stable/plugins/playlist.html
@@ -459,7 +461,7 @@ def search3():
     albumCount = request.args.get('albumCount')
     songCount = request.args.get('songCount')
     return flask.jsonify(wrap_res("searchResult3", {
-        "song": map(map_song, songs)
+        "song": list(map(map_song, songs))
     }))
 
 @app.route('/rest/getMusicFolders', methods=["GET", "POST"])
@@ -504,7 +506,7 @@ def item_unique_field_values(key):
 
 @app.route('/album/<idlist:ids>', methods=["GET", "DELETE"])
 @resource('albums')
-def get_album(id):
+def get_album_old(id):
     return g.lib.get_album(id)
 
 @app.route('/album/')
@@ -569,7 +571,7 @@ def genres():
         }
 
     return flask.jsonify(wrap_res("genres", {
-        "genre": map(map_genre, genres)
+        "genre": list(map(map_genre, genres))
     }))
 
 @app.route('/rest/getSongsByGenre', methods=["GET", "POST"])
@@ -579,7 +581,7 @@ def songs_by_genre():
     songs = list(g.lib.items('genre:' + genre))
 
     return flask.jsonify(wrap_res("songsByGenre", {
-        "song": map(map_song, songs)
+        "song": list(map(map_song, songs))
     }))
 
 @app.route('/rest/getAlbum', methods=["GET", "POST"])
@@ -590,7 +592,7 @@ def get_album():
     songs = g.lib.get_album(id).items()
 
     return flask.jsonify(wrap_res("album", {
-        "song": map(map_song, songs)
+        "song": list(map(map_song, songs))
     }))
 
 @app.route('/rest/getAlbumList2', methods=["GET", "POST"])
@@ -626,7 +628,7 @@ def album_list_2():
             albums.sort(key=lambda album: int(dict(album)['year']), reverse=True)
 
     return flask.jsonify(wrap_res("albumList2", {
-        "album": map(map_album, albums)
+        "album": list(map(map_album, albums))
     }))
 
 @app.route('/rest/getCoverArt', methods=["GET", "POST"])
@@ -664,7 +666,7 @@ def all_artists():
         "ignoredArticles": "The El La Los Las Le",
         "index": [{
             "name": "*",
-            "artist": map(map_artist, all_artists)
+            "artist": list(map(map_artist, all_artists))
         }]
     }))
 
@@ -688,7 +690,7 @@ def indexes():
         "lastModified": int(time.time() * 1000),
         "index": [{
             "name": "*",
-            "artist": map(map_artist, all_artists)
+            "artist": list(map(map_artist, all_artists))
         }]
     }))
 
@@ -701,7 +703,7 @@ def artist():
     return flask.jsonify(wrap_res("artist", {
         "id": artist_name,
         "artist_name": artist_name,
-        "album": map(map_album, albums)
+        "album": list(map(map_album, albums))
     }))
 
 
