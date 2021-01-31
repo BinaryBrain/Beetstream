@@ -53,6 +53,7 @@ def wrap_res(key, json):
 
 def get_xml_root():
     root = ET.Element('subsonic-response')
+    root.set('xmlns', 'http://subsonic.org/restapi')
     root.set('status', 'ok')
     root.set('version', '1.16.1')
     return root
@@ -804,7 +805,6 @@ def cover_art_file():
     album_id = int(request.args.get('id'))
     album = g.lib.get_album(album_id)
     if album and album.artpath:
-        print(album.artpath)
         pic = album.artpath.decode('utf-8')
         return flask.send_file(pic)
     else:
