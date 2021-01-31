@@ -460,7 +460,6 @@ def stream_song():
     id = int(request.args.get('id'))
     maxBitrate = int(request.args.get('maxBitRate') or 0)
     item = g.lib.get_item(id)
-    print(item.path)
 
     def generate():
         with open(item.path, "rb") as songFile:
@@ -468,7 +467,7 @@ def stream_song():
             while data:
                 yield data
                 data = songFile.read(1024)
-    return Response(generate(), mimetype=mimetypes.guess_type(item.path)[0])
+    return Response(generate(), mimetype=mimetypes.guess_type(item.path.decode('utf-8'))[0])
 
 @app.route('/rest/getRandomSongs', methods=["GET", "POST"])
 @app.route('/rest/getRandomSongs.view', methods=["GET", "POST"])
