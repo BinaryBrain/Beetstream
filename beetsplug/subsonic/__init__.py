@@ -32,8 +32,7 @@ import unicodedata
 import mimetypes
 from beets.random import random_objs
 import time
-from json2xml import json2xml
-from json2xml.utils import readfromstring, readfromjson
+import xml.etree.cElementTree as ET
 
 # Utilities.
 
@@ -52,6 +51,11 @@ def wrap_res(key, json):
         }
     }
 
+def get_xml_root():
+    root = ET.Element('subsonic-response')
+    root.set('status', 'ok')
+    root.set('version', '1.16.1')
+    return root
 
 def map_album(album):
     album = dict(album)
@@ -68,6 +72,20 @@ def map_album(album):
         "year": album["year"],
         "genre": album["genre"]
     }
+
+def map_album_xml(xml, album):
+    album = dict(album)
+    xml.set("id", str(album["id"]))
+    xml.set("name", album["album"])
+    xml.set("artist", album["albumartist"])
+    xml.set("artistId", album["albumartist"])
+    xml.set("coverArt", str(album["id"]) or "")
+    xml.set("songCount", str(1)) # TODO
+    xml.set("duration", str(1)) # TODO
+    xml.set("playCount", str(1)) # TODO
+    xml.set("created", timestamp_to_iso(album["added"]))
+    xml.set("year", str(album["year"]))
+    xml.set("genre", album["genre"])
 
 def map_song(song):
     song = dict(song)
@@ -88,13 +106,36 @@ def map_song(song):
         "duration": song["length"],
         "bitRate": song["bitrate"]/1000,
         "path": song["path"].decode('utf-8'),
-        "playCount": 1745,
+        "playCount": 1745, #TODO
         "created": timestamp_to_iso(song["added"]),
         # "starred": "2019-10-23T04:41:17.107Z",
         "albumId": str(song["album_id"]),
         "artistId": song["albumartist"],
         "type": "music"
     }
+
+def map_song_xml(xml, song):
+    song = dict(song)
+    xml.set("id", str(song["id"]))
+    xml.set("parent", "71") # TODO
+    xml.set("isDir", "false")
+    xml.set("title", song["title"])
+    xml.set("album", song["album"])
+    xml.set("artist", song["albumartist"])
+    xml.set("track", str(song["track"]))
+    xml.set("year", str(song["year"]))
+    xml.set("genre", song["genre"])
+    xml.set("coverArt", str(song["album_id"]) or "")
+    xml.set("contentType", mimetypes.guess_type(song["path"].decode('utf-8'))[0])
+    xml.set("suffix", song["format"])
+    xml.set("duration", str(song["length"]))
+    xml.set("bitRate", str(song["bitrate"]/1000))
+    xml.set("path", song["path"].decode('utf-8'))
+    xml.set("playCount", str(1745)) #TODO
+    xml.set("created", timestamp_to_iso(song["added"]))
+    xml.set("albumId", str(song["album_id"]))
+    xml.set("artistId", song["albumartist"])
+    xml.set("type", "music")
 
 def _rep(obj, expand=False):
     """Get a flat -- i.e., JSON-ish -- representation of a beets Item or
@@ -333,21 +374,37 @@ def before_request():
 @app.route('/rest/ping', methods=["GET", "POST"])
 @app.route('/rest/ping.view', methods=["GET", "POST"])
 def ping():
-    return flask.jsonify({
-        "subsonic-response": {
-            "status": "ok",
-            "version": "1.16.1"
-        }
-    })
+    res_format = request.args.get('f') or 'xml'
+
+    if (res_format == 'json'):
+        return flask.jsonify({
+            "subsonic-response": {
+                "status": "ok",
+                "version": "1.16.1"
+            }
+        })
+    else:
+        root = get_xml_root()
+        return Response(ET.tostring(root), mimetype='text/xml')
 
 @app.route('/rest/getLicense', methods=["GET", "POST"])
 @app.route('/rest/getLicense.view', methods=["GET", "POST"])
 def getLicense():
-    return flask.jsonify(wrap_res("license", {
-        "valid": True,
-        "email": "foo@example.com",
-        "trialExpires": "3000-01-01T00:00:00.000Z"
-    }))
+    res_format = request.args.get('f') or 'xml'
+
+    if (res_format == 'json'):
+        return flask.jsonify(wrap_res("license", {
+            "valid": True,
+            "email": "foo@example.com",
+            "trialExpires": "3000-01-01T00:00:00.000Z"
+        }))
+    else:
+        root = get_xml_root()
+        l = ET.SubElement(root, 'license')
+        l.set("valid", "true")
+        l.set("email", "foo@example.com")
+        l.set("trialExpires", "3000-01-01T00:00:00.000Z")
+        return Response(ET.tostring(root), mimetype='text/xml')
 
 # Items.
 
@@ -416,63 +473,123 @@ def stream_song():
 @app.route('/rest/getRandomSongs', methods=["GET", "POST"])
 @app.route('/rest/getRandomSongs.view', methods=["GET", "POST"])
 def random_songs():
+    res_format = request.args.get('f') or 'xml'
     size = int(request.args.get('size') or 0)
     songs = list(g.lib.items())
     songs = random_objs(songs, -1, size)
 
-    return flask.jsonify(wrap_res("randomSongs", {
-        "song": list(map(map_song, songs))
-    }))
+    if (res_format == 'json'):
+        return flask.jsonify(wrap_res("randomSongs", {
+            "song": list(map(map_song, songs))
+        }))
+    else:
+        root = get_xml_root()
+        album = ET.SubElement(root, 'randomSongs')
+
+        for song in songs:
+            s = ET.SubElement(album, 'song')
+            map_song_xml(s, song)
+
+        return Response(ET.tostring(root), mimetype='text/xml')
+
 
 # TODO link with https://beets.readthedocs.io/en/stable/plugins/playlist.html
 @app.route('/rest/getPlaylists', methods=["GET", "POST"])
 @app.route('/rest/getPlaylists.view', methods=["GET", "POST"])
 def playlists():
-    return flask.jsonify(wrap_res("playlists", {
-        "playlist": []
-    }))
+    res_format = request.args.get('f') or 'xml'
+    if (res_format == 'json'):
+        return flask.jsonify(wrap_res("playlists", {
+            "playlist": []
+        }))
+    else:
+        root = get_xml_root()
+        ET.SubElement(root, 'playlists')
+        return Response(ET.tostring(root), mimetype='text/xml')
+
 
 # TODO link with Last.fm or ListenBrainz
 @app.route('/rest/getTopSongs', methods=["GET", "POST"])
 @app.route('/rest/getTopSongs.view', methods=["GET", "POST"])
 def top_songs():
-    return flask.jsonify(wrap_res("topSongs", {}))
+    res_format = request.args.get('f') or 'xml'
+    if (res_format == 'json'):
+        return flask.jsonify(wrap_res("topSongs", {}))
+    else:
+        root = get_xml_root()
+        ET.SubElement(root, 'topSongs')
+        return Response(ET.tostring(root), mimetype='text/xml')
+
 
 @app.route('/rest/getStarred', methods=["GET", "POST"])
 @app.route('/rest/getStarred.view', methods=["GET", "POST"])
 def starred_songs():
-    return flask.jsonify(wrap_res("starred", {
-        "song": []
-    }))
+    res_format = request.args.get('f') or 'xml'
+    if (res_format == 'json'):
+        return flask.jsonify(wrap_res("starred", {
+            "song": []
+        }))
+    else:
+        root = get_xml_root()
+        ET.SubElement(root, 'starred')
+        return Response(ET.tostring(root), mimetype='text/xml')
 
 @app.route('/rest/getStarred2', methods=["GET", "POST"])
 @app.route('/rest/getStarred2.view', methods=["GET", "POST"])
 def starred2_songs():
-    return flask.jsonify(wrap_res("starred2", {
-        "song": []
-    }))
+    res_format = request.args.get('f') or 'xml'
+    if (res_format == 'json'):
+        return flask.jsonify(wrap_res("starred2", {
+            "song": []
+        }))
+    else:
+        root = get_xml_root()
+        ET.SubElement(root, 'starred2')
+        return Response(ET.tostring(root), mimetype='text/xml')
 
+# TODO handle album and artist search
 @app.route('/rest/search3', methods=["GET", "POST"])
 @app.route('/rest/search3.view', methods=["GET", "POST"])
 def search3():
+    res_format = request.args.get('f') or 'xml'
     query = request.args.get('query') or ""
     songs = list(g.lib.items(query))
     artistCount = request.args.get('artistCount')
     albumCount = request.args.get('albumCount')
     songCount = request.args.get('songCount')
-    return flask.jsonify(wrap_res("searchResult3", {
-        "song": list(map(map_song, songs))
-    }))
+
+    if (res_format == 'json'):
+        return flask.jsonify(wrap_res("searchResult3", {
+            "song": list(map(map_song, songs))
+        }))
+    else:
+        root = get_xml_root()
+        search_result = ET.SubElement(root, 'searchResult3')
+
+        for song in songs:
+            s = ET.SubElement(search_result, 'song')
+            map_song_xml(s, song)
+
+        return Response(ET.tostring(root), mimetype='text/xml')
 
 @app.route('/rest/getMusicFolders', methods=["GET", "POST"])
 @app.route('/rest/getMusicFolders.view', methods=["GET", "POST"])
 def music_folder():
-    return flask.jsonify(wrap_res("musicFolders", {
-        "musicFolder": [{
-            "id": 0,
-            "name": "Music"
-        }]
-    }))
+    res_format = request.args.get('f') or 'xml'
+    if (res_format == 'json'):
+        return flask.jsonify(wrap_res("musicFolders", {
+            "musicFolder": [{
+                "id": 0,
+                "name": "Music"
+            }]
+        }))
+    else:
+        root = get_xml_root()
+        folder = ET.SubElement(root, 'musicFolders')
+        folder.set("id", "0")
+        folder.set("name", "Music")
+
+        return Response(ET.tostring(root), mimetype='text/xml')
 
 
 @app.route('/item/query/<query:queries>', methods=["GET", "DELETE", "PATCH"])
@@ -544,6 +661,7 @@ def album_unique_field_values(key):
 @app.route('/rest/getGenres', methods=["GET", "POST"])
 @app.route('/rest/getGenres.view', methods=["GET", "POST"])
 def genres():
+    res_format = request.args.get('f') or 'xml'
     with g.lib.transaction() as tx:
         mixed_genres = list(tx.query("""
             SELECT genre, COUNT(*) AS n_song, "" AS n_album FROM items GROUP BY genre
@@ -560,44 +678,84 @@ def genres():
             genres[key] = (genres[key][0], genre[2])
 
     genres = [(k, v[0], v[1]) for k, v in genres.items()]
-    genres.sort(key=lambda genre: strip_accents(genre[0]).upper())
+    # genres.sort(key=lambda genre: strip_accents(genre[0]).upper())
+    genres.sort(key=lambda genre: genre[1])
+    genres.reverse()
     genres = filter(lambda genre: genre[0] != u"", genres)
 
-    def map_genre(genre):
-        return {
-            "value": genre[0],
-            "songCount": genre[1],
-            "albumCount": genre[2]
-        }
+    if (res_format == 'json'):
+        def map_genre(genre):
+            return {
+                "value": genre[0],
+                "songCount": genre[1],
+                "albumCount": genre[2]
+            }
 
-    return flask.jsonify(wrap_res("genres", {
-        "genre": list(map(map_genre, genres))
-    }))
+        return flask.jsonify(wrap_res("genres", {
+            "genre": list(map(map_genre, genres))
+        }))
+    else:
+        root = get_xml_root()
+        genres_xml = ET.SubElement(root, 'genres')
+
+        for genre in genres:
+            genre_xml = ET.SubElement(genres_xml, 'genre')
+            genre_xml.text = genre[0]
+            genre_xml.set("songCount", str(genre[1]))
+            genre_xml.set("albumCount", str(genre[2]))
+
+        return Response(ET.tostring(root), mimetype='text/xml')
+
 
 @app.route('/rest/getSongsByGenre', methods=["GET", "POST"])
 @app.route('/rest/getSongsByGenre.view', methods=["GET", "POST"])
 def songs_by_genre():
+    res_format = request.args.get('f') or 'xml'
     genre = request.args.get('genre')
     songs = list(g.lib.items('genre:' + genre))
 
-    return flask.jsonify(wrap_res("songsByGenre", {
-        "song": list(map(map_song, songs))
-    }))
+    if (res_format == 'json'):
+        return flask.jsonify(wrap_res("songsByGenre", {
+            "song": list(map(map_song, songs))
+        }))
+    else:
+        root = get_xml_root()
+        songs_by_genre = ET.SubElement(root, 'songsByGenre')
+
+        for song in songs:
+            s = ET.SubElement(songs_by_genre, 'song')
+            map_song_xml(s, song)
+
+        return Response(ET.tostring(root), mimetype='text/xml')
 
 @app.route('/rest/getAlbum', methods=["GET", "POST"])
 @app.route('/rest/getAlbum.view', methods=["GET", "POST"])
 def get_album():
+    res_format = request.args.get('f') or 'xml'
     id = int(request.args.get('id'))
 
     songs = g.lib.get_album(id).items()
 
-    return flask.jsonify(wrap_res("album", {
-        "song": list(map(map_song, songs))
-    }))
+    if (res_format == 'json'):
+        res = wrap_res("album", {
+            "song": list(map(map_song, songs))
+        })
+        return flask.jsonify(res)
+    else:
+        root = get_xml_root()
+        album = ET.SubElement(root, 'album')
+
+        for song in songs:
+            s = ET.SubElement(album, 'song')
+            map_song_xml(s, song)
+
+        return Response(ET.tostring(root), mimetype='text/xml')
+
 
 @app.route('/rest/getAlbumList2', methods=["GET", "POST"])
 @app.route('/rest/getAlbumList2.view', methods=["GET", "POST"])
 def album_list_2():
+    res_format = request.args.get('f') or 'xml'
     # TODO possibleTypes = ['random', 'frequent', 'recent', 'starred']
     sort_by = request.args.get('type') or 'alphabeticalByName' # TODO
     size = int(request.args.get('size') or 0) # TODO
@@ -627,9 +785,19 @@ def album_list_2():
             albums = list(filter(lambda album: dict(album)['year'] >= toYear and dict(album)['year'] <= fromYear, albums))
             albums.sort(key=lambda album: int(dict(album)['year']), reverse=True)
 
-    return flask.jsonify(wrap_res("albumList2", {
-        "album": list(map(map_album, albums))
-    }))
+    if (res_format == 'json'):
+        return flask.jsonify(wrap_res("albumList2", {
+            "album": list(map(map_album, albums))
+        }))
+    else:
+        root = get_xml_root()
+        album_list_xml = ET.SubElement(root, 'albumList2')
+
+        for album in albums:
+            a = ET.SubElement(album_list_xml, 'album')
+            map_album_xml(a, album)
+
+        return Response(ET.tostring(root), mimetype='text/xml')
 
 @app.route('/rest/getCoverArt', methods=["GET", "POST"])
 @app.route('/rest/getCoverArt.view', methods=["GET", "POST"])
@@ -648,64 +816,107 @@ def cover_art_file():
 @app.route('/rest/getArtists', methods=["GET", "POST"])
 @app.route('/rest/getArtists.view', methods=["GET", "POST"])
 def all_artists():
+    res_format = request.args.get('f') or 'xml'
     with g.lib.transaction() as tx:
         rows = tx.query("SELECT DISTINCT albumartist FROM albums")
     all_artists = [row[0] for row in rows]
     all_artists.sort(key=lambda name: strip_accents(name).upper())
 
-    def map_artist(artist_name):
-        return {
-            "id": artist_name,
-            "name": artist_name,
-            # "coverArt": "artist_name",
-            # "albumCount": 1,
-            # "artistImageUrl": "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg",
-        }
+    if (res_format == 'json'):
+        def map_artist(artist_name):
+            return {
+                "id": artist_name,
+                "name": artist_name,
+                # TODO
+                # "coverArt": "artist_name",
+                # "albumCount": 1,
+                # "artistImageUrl": "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg",
+            }
 
-    return flask.jsonify(wrap_res("artists", {
-        "ignoredArticles": "The El La Los Las Le",
-        "index": [{
-            "name": "*",
-            "artist": list(map(map_artist, all_artists))
-        }]
-    }))
+        return flask.jsonify(wrap_res("artists", {
+            "ignoredArticles": "The El La Los Las Le",
+            "index": [{
+                "name": "*",
+                "artist": list(map(map_artist, all_artists))
+            }]
+        }))
+    else:
+        root = get_xml_root()
+        artists_xml = ET.SubElement(root, 'artists')
+        artists_xml.set('ignoredArticles', "The El La Los Las Le")
+        index_xml = ET.SubElement(artists_xml, 'index')
+        index_xml.set('name', "*")
+
+        for artist in all_artists:
+            a = ET.SubElement(index_xml, 'artist')
+            a.set("id", artist)
+            a.set("name", artist)
+
+        return Response(ET.tostring(root), mimetype='text/xml')
 
 @app.route('/rest/getIndexes', methods=["GET", "POST"])
 @app.route('/rest/getIndexes.view', methods=["GET", "POST"])
 def indexes():
+    res_format = request.args.get('f') or 'xml'
     with g.lib.transaction() as tx:
         rows = tx.query("SELECT DISTINCT albumartist FROM albums")
     all_artists = [row[0] for row in rows]
     all_artists.sort(key=lambda name: strip_accents(name).upper())
 
-    def map_artist(artist_name):
-        return {
-            "id": artist_name,
-            "name": artist_name,
-            # "artistImageUrl": "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg",
-        }
+    if (res_format == 'json'):
+        def map_artist(artist_name):
+            return {
+                "id": artist_name,
+                "name": artist_name,
+                # "artistImageUrl": "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg",
+            }
 
-    return flask.jsonify(wrap_res("indexes", {
-        "ignoredArticles": "The El La Los Las Le",
-        "lastModified": int(time.time() * 1000),
-        "index": [{
-            "name": "*",
-            "artist": list(map(map_artist, all_artists))
-        }]
-    }))
+        return flask.jsonify(wrap_res("indexes", {
+            "ignoredArticles": "The El La Los Las Le",
+            "lastModified": int(time.time() * 1000),
+            "index": [{
+                "name": "*",
+                "artist": list(map(map_artist, all_artists))
+            }]
+        }))
+    else:
+        root = get_xml_root()
+        artists_xml = ET.SubElement(root, 'artists')
+        artists_xml.set('ignoredArticles', "The El La Los Las Le")
+        index_xml = ET.SubElement(artists_xml, 'index')
+        index_xml.set('name', "*")
+
+        for artist in all_artists:
+            a = ET.SubElement(index_xml, 'artist')
+            a.set("id", artist)
+            a.set("name", artist)
+
+        return Response(ET.tostring(root), mimetype='text/xml')
 
 @app.route('/rest/getArtist', methods=["GET", "POST"])
 @app.route('/rest/getArtist.view', methods=["GET", "POST"])
 def artist():
+    res_format = request.args.get('f') or 'xml'
     artist_name = request.args.get('id')
     albums = g.lib.albums(artist_name)
 
-    return flask.jsonify(wrap_res("artist", {
-        "id": artist_name,
-        "artist_name": artist_name,
-        "album": list(map(map_album, albums))
-    }))
+    if (res_format == 'json'):
+        return flask.jsonify(wrap_res("artist", {
+            "id": artist_name,
+            "artist_name": artist_name,
+            "album": list(map(map_album, albums))
+        }))
+    else:
+        root = get_xml_root()
+        artist_xml = ET.SubElement(root, 'artist')
+        artist_xml.set("id", artist_name)
+        artist_xml.set("artist_name", artist_name)
 
+        for album in albums:
+            a = ET.SubElement(artist_xml, 'album')
+            map_album_xml(a, album)
+
+        return Response(ET.tostring(root), mimetype='text/xml')
 
 # Library information.
 
@@ -724,25 +935,50 @@ def stats():
 @app.route('/rest/getUser', methods=["GET", "POST"])
 @app.route('/rest/getUser.view', methods=["GET", "POST"])
 def user():
-    return flask.jsonify(wrap_res("user", {
-        "username" : "admin",
-        "email" : "foo@example.com",
-        "scrobblingEnabled" : True,
-        "adminRole" : True,
-        "settingsRole" : True,
-        "downloadRole" : True,
-        "uploadRole" : True,
-        "playlistRole" : True,
-        "coverArtRole" : True,
-        "commentRole" : True,
-        "podcastRole" : True,
-        "streamRole" : True,
-        "jukeboxRole" : True,
-        "shareRole" : True,
-        "videoConversionRole" : True,
-        "avatarLastChanged" : "1970-01-01T00:00:00.000Z",
-        "folder" : [ 0 ]
-    }))
+    res_format = request.args.get('f') or 'xml'
+    if (res_format == 'json'):
+        return flask.jsonify(wrap_res("user", {
+            "username" : "admin",
+            "email" : "foo@example.com",
+            "scrobblingEnabled" : True,
+            "adminRole" : True,
+            "settingsRole" : True,
+            "downloadRole" : True,
+            "uploadRole" : True,
+            "playlistRole" : True,
+            "coverArtRole" : True,
+            "commentRole" : True,
+            "podcastRole" : True,
+            "streamRole" : True,
+            "jukeboxRole" : True,
+            "shareRole" : True,
+            "videoConversionRole" : True,
+            "avatarLastChanged" : "1970-01-01T00:00:00.000Z",
+            "folder" : [ 0 ]
+        }))
+    else:
+        root = get_xml_root()
+        u = ET.SubElement(root, 'user')
+        u.set("username", "admin")
+        u.set("email", "foo@example.com")
+        u.set("scrobblingEnabled", "true")
+        u.set("adminRole", "true")
+        u.set("settingsRole", "true")
+        u.set("downloadRole", "true")
+        u.set("uploadRole", "true")
+        u.set("playlistRole", "true")
+        u.set("coverArtRole", "true")
+        u.set("commentRole", "true")
+        u.set("podcastRole", "true")
+        u.set("streamRole", "true")
+        u.set("jukeboxRole", "true")
+        u.set("shareRole", "true")
+        u.set("videoConversionRole", "true")
+        u.set("avatarLastChanged", "1970-01-01T00:00:00.000Z")
+        f = ET.SubElement(u, 'folder')
+        f.text = "0"
+
+        return Response(ET.tostring(root), mimetype='text/xml')
 
 # UI.
 
