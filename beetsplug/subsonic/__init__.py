@@ -828,9 +828,9 @@ def all_artists():
                 "id": artist_name,
                 "name": artist_name,
                 # TODO
-                # "coverArt": "artist_name",
-                # "albumCount": 1,
-                # "artistImageUrl": "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg",
+                "coverArt": "",
+                "albumCount": 1,
+                "artistImageUrl": "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg"
             }
 
         return flask.jsonify(wrap_res("artists", {
@@ -851,6 +851,9 @@ def all_artists():
             a = ET.SubElement(index_xml, 'artist')
             a.set("id", artist)
             a.set("name", artist)
+            a.set("coverArt", "")
+            a.set("albumCount", "1")
+            a.set("artistImageUrl", "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg")
 
         return Response(ET.tostring(root), mimetype='text/xml')
 
@@ -868,7 +871,9 @@ def indexes():
             return {
                 "id": artist_name,
                 "name": artist_name,
-                # "artistImageUrl": "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg",
+                # TODO
+                "albumCount": 1,
+                "artistImageUrl": "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg"
             }
 
         return flask.jsonify(wrap_res("indexes", {
@@ -881,15 +886,17 @@ def indexes():
         }))
     else:
         root = get_xml_root()
-        artists_xml = ET.SubElement(root, 'artists')
-        artists_xml.set('ignoredArticles', "The El La Los Las Le")
-        index_xml = ET.SubElement(artists_xml, 'index')
+        indexes_xml = ET.SubElement(root, 'indexes')
+        indexes_xml.set('ignoredArticles', "The El La Los Las Le")
+        index_xml = ET.SubElement(indexes_xml, 'index')
         index_xml.set('name', "*")
 
         for artist in all_artists:
             a = ET.SubElement(index_xml, 'artist')
             a.set("id", artist)
             a.set("name", artist)
+            a.set("albumCount", "1")
+            a.set("artistImageUrl", "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg")
 
         return Response(ET.tostring(root), mimetype='text/xml')
 
