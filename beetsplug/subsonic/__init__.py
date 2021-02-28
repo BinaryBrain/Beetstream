@@ -799,10 +799,11 @@ def album_list_2():
 
         return Response(ET.tostring(root), mimetype='text/xml')
 
+# TODO search also for song ID (/rest/stream?id=4042 is Rammstein)
 @app.route('/rest/getCoverArt', methods=["GET", "POST"])
 @app.route('/rest/getCoverArt.view', methods=["GET", "POST"])
 def cover_art_file():
-    album_id = int(request.args.get('id'))
+    album_id = int(request.args.get('id') or -1)
     album = g.lib.get_album(album_id)
     if album and album.artpath:
         pic = album.artpath.decode('utf-8')
