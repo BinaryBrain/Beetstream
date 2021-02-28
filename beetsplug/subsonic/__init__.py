@@ -734,7 +734,7 @@ def get_album():
     res_format = request.args.get('f') or 'xml'
     id = int(request.args.get('id'))
 
-    songs = g.lib.get_album(id).items()
+    songs = sorted(g.lib.get_album(id).items(), key=lambda song: song.track)
 
     if (res_format == 'json'):
         res = wrap_res("album", {
