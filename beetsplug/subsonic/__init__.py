@@ -547,10 +547,18 @@ def starred2_songs():
         ET.SubElement(root, 'starred2')
         return Response(ET.tostring(root), mimetype='text/xml')
 
-# TODO handle album and artist search
+@app.route('/rest/search2', methods=["GET", "POST"])
+@app.route('/rest/search2.view', methods=["GET", "POST"])
+def search2():
+    return search(2)
+
 @app.route('/rest/search3', methods=["GET", "POST"])
 @app.route('/rest/search3.view', methods=["GET", "POST"])
 def search3():
+    return search(3)
+
+# TODO handle album and artist search
+def search(version):
     res_format = request.args.get('f') or 'xml'
     query = request.args.get('query') or ""
     songs = list(g.lib.items(query))
@@ -559,12 +567,12 @@ def search3():
     songCount = request.args.get('songCount')
 
     if (res_format == 'json'):
-        return flask.jsonify(wrap_res("searchResult3", {
+        return flask.jsonify(wrap_res("searchResult{}".format(version), {
             "song": list(map(map_song, songs))
         }))
     else:
         root = get_xml_root()
-        search_result = ET.SubElement(root, 'searchResult3')
+        search_result = ET.SubElement(root, 'searchResult{}'.format(version))
 
         for song in songs:
             s = ET.SubElement(search_result, 'song')
