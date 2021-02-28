@@ -138,6 +138,23 @@ def map_song_xml(xml, song):
     xml.set("artistId", song["albumartist"])
     xml.set("type", "music")
 
+def map_artist(artist_name):
+    return {
+        "id": artist_name,
+        "name": artist_name,
+        # TODO
+        "coverArt": "",
+        "albumCount": 1,
+        "artistImageUrl": "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg"
+    }
+
+def map_artist_xml(xml, artist_name):
+    xml.set("id", artist_name)
+    xml.set("name", artist_name)
+    xml.set("coverArt", "")
+    xml.set("albumCount", "1")
+    xml.set("artistImageUrl", "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg")
+
 def _rep(obj, expand=False):
     """Get a flat -- i.e., JSON-ish -- representation of a beets Item or
     Album object. For Albums, `expand` dictates whether tracks are
@@ -557,22 +574,40 @@ def search2():
 def search3():
     return search(3)
 
-# TODO handle album and artist search
+# TODO handle paging
 def search(version):
     res_format = request.args.get('f') or 'xml'
     query = request.args.get('query') or ""
-    songs = list(g.lib.items(query))
-    artistCount = request.args.get('artistCount')
-    albumCount = request.args.get('albumCount')
-    songCount = request.args.get('songCount')
+    songs = list(g.lib.items("title:{}".format(query)))
+    albums = list(g.lib.albums("album:{}".format(query)))
+    with g.lib.transaction() as tx:
+        rows = tx.query("SELECT DISTINCT albumartist FROM albums")
+    artists = [row[0] for row in rows]
+    artists = list(filter(lambda artist: strip_accents(query).lower() in strip_accents(artist).lower(), artists))
+    print(artists)
+    artists.sort(key=lambda name: strip_accents(name).upper())
+
+    artistCount = request.args.get('artistCount') # TODO handle it
+    albumCount = request.args.get('albumCount') # TODO handle it
+    songCount = request.args.get('songCount') # TODO handle it
 
     if (res_format == 'json'):
         return flask.jsonify(wrap_res("searchResult{}".format(version), {
+            "artist": list(map(map_artist, artists)),
+            "album": list(map(map_album, albums)),
             "song": list(map(map_song, songs))
         }))
     else:
         root = get_xml_root()
         search_result = ET.SubElement(root, 'searchResult{}'.format(version))
+
+        for artist in artists:
+            a = ET.SubElement(search_result, 'artist')
+            map_artist_xml(a, artist)
+
+        for album in albums:
+            a = ET.SubElement(search_result, 'album')
+            map_album_xml(a, album)
 
         for song in songs:
             s = ET.SubElement(search_result, 'song')
@@ -839,16 +874,6 @@ def all_artists():
     all_artists.sort(key=lambda name: strip_accents(name).upper())
 
     if (res_format == 'json'):
-        def map_artist(artist_name):
-            return {
-                "id": artist_name,
-                "name": artist_name,
-                # TODO
-                "coverArt": "",
-                "albumCount": 1,
-                "artistImageUrl": "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg"
-            }
-
         return flask.jsonify(wrap_res("artists", {
             "ignoredArticles": "The El La Los Las Le",
             "index": [{
@@ -865,11 +890,7 @@ def all_artists():
 
         for artist in all_artists:
             a = ET.SubElement(index_xml, 'artist')
-            a.set("id", artist)
-            a.set("name", artist)
-            a.set("coverArt", "")
-            a.set("albumCount", "1")
-            a.set("artistImageUrl", "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg")
+            map_artist_xml(a, artist)
 
         return Response(ET.tostring(root), mimetype='text/xml')
 
@@ -883,15 +904,6 @@ def indexes():
     all_artists.sort(key=lambda name: strip_accents(name).upper())
 
     if (res_format == 'json'):
-        def map_artist(artist_name):
-            return {
-                "id": artist_name,
-                "name": artist_name,
-                # TODO
-                "albumCount": 1,
-                "artistImageUrl": "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg"
-            }
-
         return flask.jsonify(wrap_res("indexes", {
             "ignoredArticles": "The El La Los Las Le",
             "lastModified": int(time.time() * 1000),
@@ -909,10 +921,7 @@ def indexes():
 
         for artist in all_artists:
             a = ET.SubElement(index_xml, 'artist')
-            a.set("id", artist)
-            a.set("name", artist)
-            a.set("albumCount", "1")
-            a.set("artistImageUrl", "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg")
+            map_artist_xml(a, artist)
 
         return Response(ET.tostring(root), mimetype='text/xml')
 
