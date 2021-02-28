@@ -914,6 +914,7 @@ def artist():
     res_format = request.args.get('f') or 'xml'
     artist_name = request.args.get('id')
     albums = g.lib.albums(artist_name)
+    albums = filter(lambda album: album.albumartist == artist_name, albums)
 
     if (res_format == 'json'):
         return flask.jsonify(wrap_res("artist", {
