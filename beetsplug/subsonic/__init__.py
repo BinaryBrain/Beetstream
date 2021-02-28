@@ -807,12 +807,20 @@ def album_list_2():
 
         return Response(ET.tostring(root), mimetype='text/xml')
 
-# TODO search also for song ID (/rest/stream?id=4042 is Rammstein)
 @app.route('/rest/getCoverArt', methods=["GET", "POST"])
 @app.route('/rest/getCoverArt.view', methods=["GET", "POST"])
 def cover_art_file():
-    album_id = int(request.args.get('id') or -1)
-    album = g.lib.get_album(album_id)
+    query_id = int(request.args.get('id') or -1)
+    album = g.lib.get_album(query_id)
+
+    # Fallback on item id. Some apps use this
+    if not album:
+        item = g.lib.get_item(query_id)
+        if item:
+            album = g.lib.get_album(item.album_id)
+        else:
+            flask.abort(404)
+
     if album and album.artpath:
         pic = album.artpath.decode('utf-8')
         return flask.send_file(pic)
