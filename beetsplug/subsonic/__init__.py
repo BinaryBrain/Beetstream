@@ -902,26 +902,49 @@ def indexes():
         rows = tx.query("SELECT DISTINCT albumartist FROM albums")
     all_artists = [row[0] for row in rows]
     all_artists.sort(key=lambda name: strip_accents(name).upper())
+    all_artists = filter(lambda name: len(name) > 0, all_artists)
+
+    indicies_dict = {}
+
+    for name in all_artists:
+        index = strip_accents(name[0]).upper()
+        if index not in indicies_dict:
+            indicies_dict[index] = []
+        indicies_dict[index].append(name)
 
     if (res_format == 'json'):
+        indicies = []
+        for index, artist_names in indicies_dict.items():
+            indicies.append({
+                "name": index,
+                "artist": list(map(map_artist, artist_names))
+            })
+
         return flask.jsonify(wrap_res("indexes", {
-            "ignoredArticles": "The El La Los Las Le",
+            "ignoredArticles": "",
             "lastModified": int(time.time() * 1000),
-            "index": [{
-                "name": "*",
-                "artist": list(map(map_artist, all_artists))
-            }]
+            "index": indicies
         }))
     else:
         root = get_xml_root()
         indexes_xml = ET.SubElement(root, 'indexes')
-        indexes_xml.set('ignoredArticles', "The El La Los Las Le")
-        index_xml = ET.SubElement(indexes_xml, 'index')
-        index_xml.set('name', "*")
+        indexes_xml.set('ignoredArticles', "")
 
-        for artist in all_artists:
-            a = ET.SubElement(index_xml, 'artist')
-            map_artist_xml(a, artist)
+        indicies = []
+        for index, artist_names in indicies_dict.items():
+            indicies.append({
+                "name": index,
+                "artist": artist_names
+            })
+
+        for index in indicies:
+            print(index)
+            index_xml = ET.SubElement(indexes_xml, 'index')
+            index_xml.set('name', index["name"])
+
+            for a in index["artist"]:
+                artist = ET.SubElement(index_xml, 'artist')
+                map_artist_xml(artist, a)
 
         return Response(ET.tostring(root), mimetype='text/xml')
 
