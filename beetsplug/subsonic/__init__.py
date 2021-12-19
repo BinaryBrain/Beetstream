@@ -58,6 +58,10 @@ def get_xml_root():
     root.set('version', '1.16.1')
     return root
 
+def xml_to_string(xml):
+    # Add declaration: <?xml version="1.0" encoding="UTF-8"?>
+    return ET.tostring(xml, encoding='unicode', method='xml', xml_declaration=True)
+
 def map_album(album):
     album = dict(album)
     return {
@@ -439,7 +443,7 @@ def ping():
         })
     else:
         root = get_xml_root()
-        return Response(ET.tostring(root), mimetype='text/xml')
+        return Response(xml_to_string(root), mimetype='text/xml')
 
 @app.route('/rest/getLicense', methods=["GET", "POST"])
 @app.route('/rest/getLicense.view', methods=["GET", "POST"])
@@ -458,7 +462,7 @@ def getLicense():
         l.set("valid", "true")
         l.set("email", "foo@example.com")
         l.set("trialExpires", "3000-01-01T00:00:00.000Z")
-        return Response(ET.tostring(root), mimetype='text/xml')
+        return Response(xml_to_string(root), mimetype='text/xml')
 
 # Items.
 
@@ -543,7 +547,7 @@ def random_songs():
             s = ET.SubElement(album, 'song')
             map_song_xml(s, song)
 
-        return Response(ET.tostring(root), mimetype='text/xml')
+        return Response(xml_to_string(root), mimetype='text/xml')
 
 
 # TODO link with https://beets.readthedocs.io/en/stable/plugins/playlist.html
@@ -558,7 +562,7 @@ def playlists():
     else:
         root = get_xml_root()
         ET.SubElement(root, 'playlists')
-        return Response(ET.tostring(root), mimetype='text/xml')
+        return Response(xml_to_string(root), mimetype='text/xml')
 
 
 # TODO link with Last.fm or ListenBrainz
@@ -571,7 +575,7 @@ def top_songs():
     else:
         root = get_xml_root()
         ET.SubElement(root, 'topSongs')
-        return Response(ET.tostring(root), mimetype='text/xml')
+        return Response(xml_to_string(root), mimetype='text/xml')
 
 
 @app.route('/rest/getStarred', methods=["GET", "POST"])
@@ -585,7 +589,7 @@ def starred_songs():
     else:
         root = get_xml_root()
         ET.SubElement(root, 'starred')
-        return Response(ET.tostring(root), mimetype='text/xml')
+        return Response(xml_to_string(root), mimetype='text/xml')
 
 @app.route('/rest/getStarred2', methods=["GET", "POST"])
 @app.route('/rest/getStarred2.view', methods=["GET", "POST"])
@@ -598,7 +602,7 @@ def starred2_songs():
     else:
         root = get_xml_root()
         ET.SubElement(root, 'starred2')
-        return Response(ET.tostring(root), mimetype='text/xml')
+        return Response(xml_to_string(root), mimetype='text/xml')
 
 @app.route('/rest/search2', methods=["GET", "POST"])
 @app.route('/rest/search2.view', methods=["GET", "POST"])
@@ -649,7 +653,7 @@ def search(version):
             s = ET.SubElement(search_result, 'song')
             map_song_xml(s, song)
 
-        return Response(ET.tostring(root), mimetype='text/xml')
+        return Response(xml_to_string(root), mimetype='text/xml')
 
 @app.route('/rest/getMusicFolders', methods=["GET", "POST"])
 @app.route('/rest/getMusicFolders.view', methods=["GET", "POST"])
@@ -668,7 +672,7 @@ def music_folder():
         folder.set("id", "0")
         folder.set("name", "Music")
 
-        return Response(ET.tostring(root), mimetype='text/xml')
+        return Response(xml_to_string(root), mimetype='text/xml')
 
 
 @app.route('/item/query/<query:queries>', methods=["GET", "DELETE", "PATCH"])
@@ -783,7 +787,7 @@ def genres():
             genre_xml.set("songCount", str(genre[1]))
             genre_xml.set("albumCount", str(genre[2]))
 
-        return Response(ET.tostring(root), mimetype='text/xml')
+        return Response(xml_to_string(root), mimetype='text/xml')
 
 
 @app.route('/rest/getSongsByGenre', methods=["GET", "POST"])
@@ -805,7 +809,7 @@ def songs_by_genre():
             s = ET.SubElement(songs_by_genre, 'song')
             map_song_xml(s, song)
 
-        return Response(ET.tostring(root), mimetype='text/xml')
+        return Response(xml_to_string(root), mimetype='text/xml')
 
 @app.route('/rest/getAlbum', methods=["GET", "POST"])
 @app.route('/rest/getAlbum.view', methods=["GET", "POST"])
@@ -828,7 +832,7 @@ def get_album():
             s = ET.SubElement(album, 'song')
             map_song_xml(s, song)
 
-        return Response(ET.tostring(root), mimetype='text/xml')
+        return Response(xml_to_string(root), mimetype='text/xml')
 
 
 @app.route('/rest/getAlbumList', methods=["GET", "POST"])
@@ -876,7 +880,7 @@ def album_list():
             a = ET.SubElement(album_list_xml, 'album')
             map_album_list_xml(a, album)
 
-        return Response(ET.tostring(root), mimetype='text/xml')
+        return Response(xml_to_string(root), mimetype='text/xml')
 
 @app.route('/rest/getAlbumList2', methods=["GET", "POST"])
 @app.route('/rest/getAlbumList2.view', methods=["GET", "POST"])
@@ -923,7 +927,7 @@ def album_list_2():
             a = ET.SubElement(album_list_xml, 'album')
             map_album_xml(a, album)
 
-        return Response(ET.tostring(root), mimetype='text/xml')
+        return Response(xml_to_string(root), mimetype='text/xml')
 
 @app.route('/rest/getCoverArt', methods=["GET", "POST"])
 @app.route('/rest/getCoverArt.view', methods=["GET", "POST"])
@@ -976,7 +980,7 @@ def all_artists():
             a = ET.SubElement(index_xml, 'artist')
             map_artist_xml(a, artist)
 
-        return Response(ET.tostring(root), mimetype='text/xml')
+        return Response(xml_to_string(root), mimetype='text/xml')
 
 @app.route('/rest/getIndexes', methods=["GET", "POST"])
 @app.route('/rest/getIndexes.view', methods=["GET", "POST"])
@@ -1030,7 +1034,7 @@ def indexes():
                 artist = ET.SubElement(index_xml, 'artist')
                 map_artist_xml(artist, a)
 
-        return Response(ET.tostring(root), mimetype='text/xml')
+        return Response(xml_to_string(root), mimetype='text/xml')
 
 @app.route('/rest/getMusicDirectory', methods=["GET", "POST"])
 @app.route('/rest/getMusicDirectory.view', methods=["GET", "POST"])
@@ -1064,7 +1068,7 @@ def artist():
             a = ET.SubElement(artist_xml, 'album')
             map_album_xml(a, album)
 
-        return Response(ET.tostring(root), mimetype='text/xml')
+        return Response(xml_to_string(root), mimetype='text/xml')
 
 # Library information.
 
@@ -1126,7 +1130,7 @@ def user():
         f = ET.SubElement(u, 'folder')
         f.text = "0"
 
-        return Response(ET.tostring(root), mimetype='text/xml')
+        return Response(xml_to_string(root), mimetype='text/xml')
 
 # UI.
 
