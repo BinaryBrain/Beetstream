@@ -33,6 +33,7 @@ import mimetypes
 from beets.random import random_objs
 import time
 import xml.etree.cElementTree as ET
+from flask_cors import CORS
 
 # Utilities.
 
@@ -1147,8 +1148,8 @@ class SubSonicPlugin(BeetsPlugin):
         self.config.add({
             'host': u'127.0.0.1',
             'port': 8080,
-            'cors': '',
-            'cors_supports_credentials': False,
+            'cors': '*',
+            'cors_supports_credentials': True,
             'reverse_proxy': False,
             'include_paths': False,
         })
@@ -1175,7 +1176,6 @@ class SubSonicPlugin(BeetsPlugin):
             if self.config['cors']:
                 self._log.info(u'Enabling CORS with origin: {0}',
                                self.config['cors'])
-                from flask_cors import CORS
                 app.config['CORS_ALLOW_HEADERS'] = "Content-Type"
                 app.config['CORS_RESOURCES'] = {
                     r"/*": {"origins": self.config['cors'].get(str)}

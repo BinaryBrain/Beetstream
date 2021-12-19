@@ -2,6 +2,8 @@
 
 Beets.io plugin that expose SubSonic API endpoints.
 
+Requires Python 3.8 or newer.
+
 Install with:
 
 ```
