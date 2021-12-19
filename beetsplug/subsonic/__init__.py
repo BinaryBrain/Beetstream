@@ -36,7 +36,9 @@ import xml.etree.cElementTree as ET
 from math import ceil
 from flask_cors import CORS
 
-ARTIST_ID_PREFIX = "artist:"
+ARTIST_ID_PREFIX = "1"
+ALBUM_ID_PREFIX = "2"
+SONG_ID_PREFIX = "3"
 
 # Utilities.
 
@@ -69,11 +71,11 @@ def xml_to_string(xml):
 def map_album(album):
     album = dict(album)
     return {
-        "id": album["id"],
+        "id": album_beetid_to_subid(str(album["id"])),
         "name": album["album"],
         "artist": album["albumartist"],
         "artistId": artist_name_to_id(album["albumartist"]),
-        "coverArt": album["id"] or "",
+        "coverArt": album_beetid_to_subid(str(album["id"])) or "",
         "songCount": 1, # TODO
         "duration": 1, # TODO
         "playCount": 1, # TODO
@@ -84,11 +86,11 @@ def map_album(album):
 
 def map_album_xml(xml, album):
     album = dict(album)
-    xml.set("id", str(album["id"]))
+    xml.set("id", album_beetid_to_subid(str(album["id"])))
     xml.set("name", album["album"])
     xml.set("artist", album["albumartist"])
     xml.set("artistId", artist_name_to_id(album["albumartist"]))
-    xml.set("coverArt", str(album["id"]) or "")
+    xml.set("coverArt", album_beetid_to_subid(str(album["id"])) or "")
     xml.set("songCount", str(1)) # TODO
     xml.set("duration", str(1)) # TODO
     xml.set("playCount", str(1)) # TODO
@@ -99,7 +101,7 @@ def map_album_xml(xml, album):
 def map_album_list(album):
     album = dict(album)
     return {
-        "id": str(album["id"]),
+        "id": album_beetid_to_subid(str(album["id"])),
         "parent": artist_name_to_id(album["albumartist"]),
         "isDir": True,
         "title": album["album"],
@@ -107,7 +109,7 @@ def map_album_list(album):
         "artist": album["albumartist"],
         "year": album["year"],
         "genre": album["genre"],
-        "coverArt": str(album["id"]) or "",
+        "coverArt": album_beetid_to_subid(str(album["id"])) or "",
         "userRating": 5, # TODO
         "averageRating": 5, # TODO
         "playCount": 1,  # TODO
@@ -117,7 +119,7 @@ def map_album_list(album):
 
 def map_album_list_xml(xml, album):
     album = dict(album)
-    xml.set("id", str(album["id"]))
+    xml.set("id", album_beetid_to_subid(str(album["id"])))
     xml.set("parent", artist_name_to_id(album["albumartist"]))
     xml.set("isDir", "true")
     xml.set("title", album["album"])
@@ -125,7 +127,7 @@ def map_album_list_xml(xml, album):
     xml.set("artist", album["albumartist"])
     xml.set("year", str(album["year"]))
     xml.set("genre", album["genre"])
-    xml.set("coverArt", str(album["id"]) or "")
+    xml.set("coverArt", album_beetid_to_subid(str(album["id"])) or "")
     xml.set("userRating", "5") # TODO
     xml.set("averageRating", "5") # TODO
     xml.set("playCount", "1")  # TODO
@@ -135,8 +137,8 @@ def map_album_list_xml(xml, album):
 def map_song(song):
     song = dict(song)
     return {
-        "id": str(song["id"]),
-        "parent": "71", # TODO
+        "id": song_beetid_to_subid(str(song["id"])),
+        "parent": album_beetid_to_subid(str(song["album_id"])),
         "isDir": False,
         "title": song["title"],
         "album": song["album"],
@@ -144,7 +146,7 @@ def map_song(song):
         "track": song["track"],
         "year": song["year"],
         "genre": song["genre"],
-        "coverArt": str(song["album_id"]) or "",
+        "coverArt": album_beetid_to_subid(str(song["album_id"])) or "",
         # TODO "size": 3612800,
         "contentType": mimetypes.guess_type(song["path"].decode('utf-8'))[0],
         "suffix": song["format"],
@@ -154,15 +156,15 @@ def map_song(song):
         "playCount": 1745, #TODO
         "created": timestamp_to_iso(song["added"]),
         # "starred": "2019-10-23T04:41:17.107Z",
-        "albumId": str(song["album_id"]),
+        "albumId": album_beetid_to_subid(str(song["album_id"])),
         "artistId": artist_name_to_id(song["albumartist"]),
         "type": "music"
     }
 
 def map_song_xml(xml, song):
     song = dict(song)
-    xml.set("id", str(song["id"]))
-    xml.set("parent", "71") # TODO
+    xml.set("id", song_beetid_to_subid(str(song["id"])))
+    xml.set("parent", album_beetid_to_subid(str(song["album_id"])))
     xml.set("isDir", "false")
     xml.set("title", song["title"])
     xml.set("album", song["album"])
@@ -170,7 +172,7 @@ def map_song_xml(xml, song):
     xml.set("track", str(song["track"]))
     xml.set("year", str(song["year"]))
     xml.set("genre", song["genre"])
-    xml.set("coverArt", str(song["album_id"]) or "")
+    xml.set("coverArt", album_beetid_to_subid(str(song["album_id"])) or "")
     xml.set("contentType", mimetypes.guess_type(song["path"].decode('utf-8'))[0])
     xml.set("suffix", song["format"])
     xml.set("duration", str(ceil(song["length"])))
@@ -178,7 +180,7 @@ def map_song_xml(xml, song):
     xml.set("path", song["path"].decode('utf-8'))
     xml.set("playCount", str(1745)) #TODO
     xml.set("created", timestamp_to_iso(song["added"]))
-    xml.set("albumId", str(song["album_id"]))
+    xml.set("albumId", album_beetid_to_subid(str(song["album_id"])))
     xml.set("artistId", artist_name_to_id(song["albumartist"]))
     xml.set("type", "music")
 
@@ -204,6 +206,18 @@ def artist_name_to_id(name):
 
 def artist_id_to_name(id):
     return id[len(ARTIST_ID_PREFIX):]
+
+def album_beetid_to_subid(id):
+    return f"{ALBUM_ID_PREFIX}{id}"
+
+def album_subid_to_beetid(id):
+    return id[len(ALBUM_ID_PREFIX):]
+
+def song_beetid_to_subid(id):
+    return f"{SONG_ID_PREFIX}{id}"
+
+def song_subid_to_beetid(id):
+    return id[len(SONG_ID_PREFIX):]
 
 def _rep(obj, expand=False):
     """Get a flat -- i.e., JSON-ish -- representation of a beets Item or
@@ -477,58 +491,11 @@ def getLicense():
         l.set("trialExpires", "3000-01-01T00:00:00.000Z")
         return Response(xml_to_string(root), mimetype='text/xml')
 
-# Items.
-
-@app.route('/item/<idlist:ids>', methods=["GET", "DELETE", "PATCH"])
-@resource('items', patchable=True)
-def get_item(id):
-    return g.lib.get_item(id)
-
-
-@app.route('/item/')
-@app.route('/item/query/')
-@resource_list('items')
-def all_items():
-    return g.lib.items()
-
-
-@app.route('/item/<int:item_id>/file')
-def item_file(item_id):
-    item = g.lib.get_item(item_id)
-
-    # On Windows under Python 2, Flask wants a Unicode path. On Python 3, it
-    # *always* wants a Unicode path.
-    if os.name == 'nt':
-        item_path = util.syspath(item.path)
-    else:
-        item_path = util.py3_path(item.path)
-
-    try:
-        unicode_item_path = util.text_string(item.path)
-    except (UnicodeDecodeError, UnicodeEncodeError):
-        unicode_item_path = util.displayable_path(item.path)
-
-    base_filename = os.path.basename(unicode_item_path)
-    try:
-        # Imitate http.server behaviour
-        base_filename.encode("latin-1", "strict")
-    except UnicodeEncodeError:
-        safe_filename = unidecode(base_filename)
-    else:
-        safe_filename = base_filename
-
-    response = flask.send_file(
-        item_path,
-        as_attachment=True,
-        attachment_filename=safe_filename
-    )
-    response.headers['Content-Length'] = os.path.getsize(item_path)
-    return response
-
+# Files
 @app.route('/rest/stream', methods=["GET", "POST"])
 @app.route('/rest/stream.view', methods=["GET", "POST"])
 def stream_song():
-    id = int(request.args.get('id'))
+    id = int(song_subid_to_beetid(request.args.get('id')))
     maxBitrate = int(request.args.get('maxBitRate') or 0)
     item = g.lib.get_item(id)
 
@@ -714,45 +681,7 @@ def item_unique_field_values(key):
     return flask.jsonify(values=values)
 
 
-# Albums.
-
-@app.route('/album/<idlist:ids>', methods=["GET", "DELETE"])
-@resource('albums')
-def get_album_old(id):
-    return g.lib.get_album(id)
-
-@app.route('/album/')
-@app.route('/album/query/')
-@resource_list('albums')
-def all_albums():
-    return g.lib.albums()
-
-
-@app.route('/album/query/<query:queries>', methods=["GET", "DELETE"])
-@resource_query('albums')
-def album_query(queries):
-    return g.lib.albums(queries)
-
-
-@app.route('/album/<int:album_id>/art')
-def album_art(album_id):
-    album = g.lib.get_album(album_id)
-    if album and album.artpath:
-        return flask.send_file(album.artpath.decode('utf-8'))
-    else:
-        return flask.abort(404)
-
-
-@app.route('/album/values/<string:key>')
-def album_unique_field_values(key):
-    sort_key = flask.request.args.get('sort_key', key)
-    try:
-        values = _get_unique_table_field_values(beets.library.Album, key,
-                                                sort_key)
-    except KeyError:
-        return flask.abort(404)
-    return flask.jsonify(values=values)
-
+# Albums
 @app.route('/rest/getGenres', methods=["GET", "POST"])
 @app.route('/rest/getGenres.view', methods=["GET", "POST"])
 def genres():
@@ -802,6 +731,22 @@ def genres():
         return Response(xml_to_string(root), mimetype='text/xml')
 
 
+@app.route('/rest/getSong', methods=["GET", "POST"])
+@app.route('/rest/getSong.view', methods=["GET", "POST"])
+def song():
+    res_format = request.args.get('f') or 'xml'
+    id = int(song_subid_to_beetid(request.args.get('id')))
+    song = g.lib.get_item(id)
+
+    if (res_format == 'json'):
+        return flask.jsonify(wrap_res("song", map_song(song)))
+    else:
+        root = get_xml_root()
+        s = ET.SubElement(root, 'song')
+        map_song_xml(s, song)
+
+        return Response(xml_to_string(root), mimetype='text/xml')
+
 @app.route('/rest/getSongsByGenre', methods=["GET", "POST"])
 @app.route('/rest/getSongsByGenre.view', methods=["GET", "POST"])
 def songs_by_genre():
@@ -827,7 +772,7 @@ def songs_by_genre():
 @app.route('/rest/getAlbum.view', methods=["GET", "POST"])
 def get_album():
     res_format = request.args.get('f') or 'xml'
-    id = int(request.args.get('id'))
+    id = int(album_subid_to_beetid(request.args.get('id')))
 
     album = g.lib.get_album(id)
     songs = sorted(album.items(), key=lambda song: song.track)
@@ -947,7 +892,7 @@ def album_list_2():
 @app.route('/rest/getCoverArt.view', methods=["GET", "POST"])
 def cover_art_file():
     # TODO Handle size (breaks official app layout)
-    query_id = int(request.args.get('id') or -1)
+    query_id = int(album_subid_to_beetid(request.args.get('id')) or -1)
     album = g.lib.get_album(query_id)
 
     # Fallback on item id. Some apps use this
@@ -1062,8 +1007,10 @@ def musicDirectory():
 
     # if id.startswith(ARTIST_ID_PREFIX):
         # Artist ID
-    # else:
-        # ?
+    # else if id.startswith(ALBUM_ID_PREFIX):
+        # Album ID
+    # else if id.startswith(SONG_ID_PREFIX):
+        # Song ID
 
 @app.route('/rest/getArtist', methods=["GET", "POST"])
 @app.route('/rest/getArtist.view', methods=["GET", "POST"])
