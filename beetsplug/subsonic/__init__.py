@@ -35,6 +35,8 @@ import time
 import xml.etree.cElementTree as ET
 from flask_cors import CORS
 
+ARTIST_ID_PREFIX = "artist:"
+
 # Utilities.
 
 def strip_accents(s):
@@ -69,7 +71,7 @@ def map_album(album):
         "id": album["id"],
         "name": album["album"],
         "artist": album["albumartist"],
-        "artistId": album["albumartist"],
+        "artistId": artist_name_to_id(album["albumartist"]),
         "coverArt": album["id"] or "",
         "songCount": 1, # TODO
         "duration": 1, # TODO
@@ -84,7 +86,7 @@ def map_album_xml(xml, album):
     xml.set("id", str(album["id"]))
     xml.set("name", album["album"])
     xml.set("artist", album["albumartist"])
-    xml.set("artistId", album["albumartist"])
+    xml.set("artistId", artist_name_to_id(album["albumartist"]))
     xml.set("coverArt", str(album["id"]) or "")
     xml.set("songCount", str(1)) # TODO
     xml.set("duration", str(1)) # TODO
@@ -97,7 +99,7 @@ def map_album_list(album):
     album = dict(album)
     return {
         "id": str(album["id"]),
-        "parent": album["albumartist"],
+        "parent": artist_name_to_id(album["albumartist"]),
         "isDir": True,
         "title": album["album"],
         "album": album["album"],
@@ -115,7 +117,7 @@ def map_album_list(album):
 def map_album_list_xml(xml, album):
     album = dict(album)
     xml.set("id", str(album["id"]))
-    xml.set("parent", album["albumartist"])
+    xml.set("parent", artist_name_to_id(album["albumartist"]))
     xml.set("isDir", "true")
     xml.set("title", album["album"])
     xml.set("album", album["album"])
@@ -152,7 +154,7 @@ def map_song(song):
         "created": timestamp_to_iso(song["added"]),
         # "starred": "2019-10-23T04:41:17.107Z",
         "albumId": str(song["album_id"]),
-        "artistId": song["albumartist"],
+        "artistId": artist_name_to_id(song["albumartist"]),
         "type": "music"
     }
 
@@ -176,12 +178,12 @@ def map_song_xml(xml, song):
     xml.set("playCount", str(1745)) #TODO
     xml.set("created", timestamp_to_iso(song["added"]))
     xml.set("albumId", str(song["album_id"]))
-    xml.set("artistId", song["albumartist"])
+    xml.set("artistId", artist_name_to_id(song["albumartist"]))
     xml.set("type", "music")
 
 def map_artist(artist_name):
     return {
-        "id": artist_name,
+        "id": artist_name_to_id(artist_name),
         "name": artist_name,
         # TODO
         "coverArt": "",
@@ -190,11 +192,17 @@ def map_artist(artist_name):
     }
 
 def map_artist_xml(xml, artist_name):
-    xml.set("id", artist_name)
+    xml.set("id", artist_name_to_id(artist_name))
     xml.set("name", artist_name)
     xml.set("coverArt", "")
     xml.set("albumCount", "1")
     xml.set("artistImageUrl", "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg")
+
+def artist_name_to_id(name):
+    return f"{ARTIST_ID_PREFIX}{name}"
+
+def artist_id_to_name(id):
+    return id[len(ARTIST_ID_PREFIX):]
 
 def _rep(obj, expand=False):
     """Get a flat -- i.e., JSON-ish -- representation of a beets Item or
@@ -628,7 +636,6 @@ def search(version):
         rows = tx.query("SELECT DISTINCT albumartist FROM albums")
     artists = [row[0] for row in rows]
     artists = list(filter(lambda artist: strip_accents(query).lower() in strip_accents(artist).lower(), artists))
-    print(artists)
     artists.sort(key=lambda name: strip_accents(name).upper())
 
     artistCount = request.args.get('artistCount') # TODO handle it
@@ -821,23 +828,25 @@ def get_album():
     res_format = request.args.get('f') or 'xml'
     id = int(request.args.get('id'))
 
-    songs = sorted(g.lib.get_album(id).items(), key=lambda song: song.track)
+    album = g.lib.get_album(id)
+    songs = sorted(album.items(), key=lambda song: song.track)
 
     if (res_format == 'json'):
         res = wrap_res("album", {
-            "song": list(map(map_song, songs))
+            **map_album(album),
+            **{ "song": list(map(map_song, songs)) }
         })
         return flask.jsonify(res)
     else:
         root = get_xml_root()
-        album = ET.SubElement(root, 'album')
+        albumXml = ET.SubElement(root, 'album')
+        map_album_xml(albumXml, album)
 
         for song in songs:
-            s = ET.SubElement(album, 'song')
+            s = ET.SubElement(albumXml, 'song')
             map_song_xml(s, song)
 
         return Response(xml_to_string(root), mimetype='text/xml')
-
 
 @app.route('/rest/getAlbumList', methods=["GET", "POST"])
 @app.route('/rest/getAlbumList.view', methods=["GET", "POST"])
@@ -1046,26 +1055,36 @@ def musicDirectory():
     # Works pretty much like a file system
     # Usually Artist first, than Album, than Songs
     # Challenge: distinguish artists IDs from Album ones and Song ones
-    return
+
+    res_format = request.args.get('f') or 'xml'
+    id = request.args.get('id')
+
+    # if id.startswith(ARTIST_ID_PREFIX):
+        # Artist ID
+    # else:
+        # ?
 
 @app.route('/rest/getArtist', methods=["GET", "POST"])
 @app.route('/rest/getArtist.view', methods=["GET", "POST"])
 def artist():
     res_format = request.args.get('f') or 'xml'
-    artist_name = request.args.get('id')
+    artist_id = request.args.get('id')
+    artist_name = artist_id_to_name(artist_id)
+    print(artist_id)
+    print(artist_name)
     albums = g.lib.albums(artist_name)
     albums = filter(lambda album: album.albumartist == artist_name, albums)
 
     if (res_format == 'json'):
         return flask.jsonify(wrap_res("artist", {
-            "id": artist_name,
+            "id": artist_id,
             "artist_name": artist_name,
             "album": list(map(map_album, albums))
         }))
     else:
         root = get_xml_root()
         artist_xml = ET.SubElement(root, 'artist')
-        artist_xml.set("id", artist_name)
+        artist_xml.set("id", artist_id)
         artist_xml.set("artist_name", artist_name)
 
         for album in albums:
@@ -1078,7 +1097,7 @@ def artist():
 @app.route('/rest/getArtistInfo2.view', methods=["GET", "POST"])
 def artistInfo2():
     res_format = request.args.get('f') or 'xml'
-    artist_name = request.args.get('id')
+    artist_name = artist_id_to_name(request.args.get('id'))
 
     if (res_format == 'json'):
         return flask.jsonify(wrap_res("artistInfo2", {
