@@ -430,6 +430,9 @@ def before_request():
 
 # System
 
+# Fake endpoint to avoid some apps errors
+@app.route('/rest/scrobble', methods=["GET", "POST"])
+@app.route('/rest/scrobble.view', methods=["GET", "POST"])
 @app.route('/rest/ping', methods=["GET", "POST"])
 @app.route('/rest/ping.view', methods=["GET", "POST"])
 def ping():
@@ -1068,6 +1071,40 @@ def artist():
         for album in albums:
             a = ET.SubElement(artist_xml, 'album')
             map_album_xml(a, album)
+
+        return Response(xml_to_string(root), mimetype='text/xml')
+
+@app.route('/rest/getArtistInfo2', methods=["GET", "POST"])
+@app.route('/rest/getArtistInfo2.view', methods=["GET", "POST"])
+def artistInfo2():
+    res_format = request.args.get('f') or 'xml'
+    artist_name = request.args.get('id')
+
+    if (res_format == 'json'):
+        return flask.jsonify(wrap_res("artistInfo2", {
+            "biography": f"wow. much artist. very {artist_name}",
+            "musicBrainzId": "",
+            "lastFmUrl": "",
+            "smallImageUrl": "",
+            "mediumImageUrl": "",
+            "largeImageUrl": ""
+        }))
+    else:
+        root = get_xml_root()
+        artist_xml = ET.SubElement(root, 'artistInfo2')
+
+        biography = ET.SubElement(artist_xml, "biography")
+        biography.text = f"wow. much artist very {artist_name}."
+        musicBrainzId = ET.SubElement(artist_xml, "musicBrainzId")
+        musicBrainzId.text = ""
+        lastFmUrl = ET.SubElement(artist_xml, "lastFmUrl")
+        lastFmUrl.text = ""
+        smallImageUrl = ET.SubElement(artist_xml, "smallImageUrl")
+        smallImageUrl.text = ""
+        mediumImageUrl = ET.SubElement(artist_xml, "mediumImageUrl")
+        mediumImageUrl.text = ""
+        largeImageUrl = ET.SubElement(artist_xml, "largeImageUrl")
+        largeImageUrl.text = ""
 
         return Response(xml_to_string(root), mimetype='text/xml')
 
