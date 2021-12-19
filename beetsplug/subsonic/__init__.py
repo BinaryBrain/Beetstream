@@ -33,6 +33,7 @@ import mimetypes
 from beets.random import random_objs
 import time
 import xml.etree.cElementTree as ET
+from math import ceil
 from flask_cors import CORS
 
 ARTIST_ID_PREFIX = "artist:"
@@ -134,7 +135,7 @@ def map_album_list_xml(xml, album):
 def map_song(song):
     song = dict(song)
     return {
-        "id": song["id"],
+        "id": str(song["id"]),
         "parent": "71", # TODO
         "isDir": False,
         "title": song["title"],
@@ -143,11 +144,11 @@ def map_song(song):
         "track": song["track"],
         "year": song["year"],
         "genre": song["genre"],
-        "coverArt": song["album_id"] or "",
-        # "size": 3612800,
+        "coverArt": str(song["album_id"]) or "",
+        # TODO "size": 3612800,
         "contentType": mimetypes.guess_type(song["path"].decode('utf-8'))[0],
         "suffix": song["format"],
-        "duration": song["length"],
+        "duration": ceil(song["length"]),
         "bitRate": song["bitrate"]/1000,
         "path": song["path"].decode('utf-8'),
         "playCount": 1745, #TODO
@@ -172,7 +173,7 @@ def map_song_xml(xml, song):
     xml.set("coverArt", str(song["album_id"]) or "")
     xml.set("contentType", mimetypes.guess_type(song["path"].decode('utf-8'))[0])
     xml.set("suffix", song["format"])
-    xml.set("duration", str(song["length"]))
+    xml.set("duration", str(ceil(song["length"])))
     xml.set("bitRate", str(song["bitrate"]/1000))
     xml.set("path", song["path"].decode('utf-8'))
     xml.set("playCount", str(1745)) #TODO
