@@ -88,6 +88,42 @@ def map_album_xml(xml, album):
     xml.set("year", str(album["year"]))
     xml.set("genre", album["genre"])
 
+def map_album_list(album):
+    album = dict(album)
+    return {
+        "id": str(album["id"]),
+        "parent": album["albumartist"],
+        "isDir": True,
+        "title": album["album"],
+        "album": album["album"],
+        "artist": album["albumartist"],
+        "year": album["year"],
+        "genre": album["genre"],
+        "coverArt": str(album["id"]) or "",
+        "userRating": 5, # TODO
+        "averageRating": 5, # TODO
+        "playCount": 1,  # TODO
+        "created": timestamp_to_iso(album["added"]),
+        "starred": ""
+    }
+
+def map_album_list_xml(xml, album):
+    album = dict(album)
+    xml.set("id", str(album["id"]))
+    xml.set("parent", album["albumartist"])
+    xml.set("isDir", "true")
+    xml.set("title", album["album"])
+    xml.set("album", album["album"])
+    xml.set("artist", album["albumartist"])
+    xml.set("year", str(album["year"]))
+    xml.set("genre", album["genre"])
+    xml.set("coverArt", str(album["id"]) or "")
+    xml.set("userRating", "5") # TODO
+    xml.set("averageRating", "5") # TODO
+    xml.set("playCount", "1")  # TODO
+    xml.set("created", timestamp_to_iso(album["added"]))
+    xml.set("starred", "")
+
 def map_song(song):
     song = dict(song)
     return {
@@ -795,6 +831,53 @@ def get_album():
         return Response(ET.tostring(root), mimetype='text/xml')
 
 
+@app.route('/rest/getAlbumList', methods=["GET", "POST"])
+@app.route('/rest/getAlbumList.view', methods=["GET", "POST"])
+def album_list():
+    res_format = request.args.get('f') or 'xml'
+    # TODO possibleTypes = ['random', 'frequent', 'recent', 'starred']
+    sort_by = request.args.get('type') or 'alphabeticalByName' # TODO
+    size = int(request.args.get('size') or 0) # TODO
+    offset = int(request.args.get('offset') or 0) # TODO
+    fromYear = int(request.args.get('fromYear') or 0)
+    toYear = int(request.args.get('toYear') or 3000)
+    genre = request.args.get('genre')
+
+    albums = list(g.lib.albums())
+
+    if sort_by == 'newest':
+        albums.sort(key=lambda album: int(dict(album)['added']), reverse=True)
+    elif sort_by == 'alphabeticalByName':
+        albums.sort(key=lambda album: strip_accents(dict(album)['album']).upper())
+    elif sort_by == 'alphabeticalByArtist':
+        albums.sort(key=lambda album: strip_accents(dict(album)['albumartist']).upper())
+    elif sort_by == 'alphabeticalByArtist':
+        albums.sort(key=lambda album: strip_accents(dict(album)['albumartist']).upper())
+    elif sort_by == 'byGenre':
+        albums = filter(lambda album: dict(album)['genre'].lower() == genre.lower(), albums)
+    elif sort_by == 'byYear':
+        # TODO use month and day data to sort
+        if fromYear <= toYear:
+            albums = list(filter(lambda album: dict(album)['year'] >= fromYear and dict(album)['year'] <= toYear, albums))
+            albums.sort(key=lambda album: int(dict(album)['year']))
+        else:
+            albums = list(filter(lambda album: dict(album)['year'] >= toYear and dict(album)['year'] <= fromYear, albums))
+            albums.sort(key=lambda album: int(dict(album)['year']), reverse=True)
+
+    if (res_format == 'json'):
+        return flask.jsonify(wrap_res("albumList", {
+            "album": list(map(map_album_list, albums))
+        }))
+    else:
+        root = get_xml_root()
+        album_list_xml = ET.SubElement(root, 'albumList')
+
+        for album in albums:
+            a = ET.SubElement(album_list_xml, 'album')
+            map_album_list_xml(a, album)
+
+        return Response(ET.tostring(root), mimetype='text/xml')
+
 @app.route('/rest/getAlbumList2', methods=["GET", "POST"])
 @app.route('/rest/getAlbumList2.view', methods=["GET", "POST"])
 def album_list_2():
@@ -845,6 +928,7 @@ def album_list_2():
 @app.route('/rest/getCoverArt', methods=["GET", "POST"])
 @app.route('/rest/getCoverArt.view', methods=["GET", "POST"])
 def cover_art_file():
+    # TODO Handle size (breaks official app layout)
     query_id = int(request.args.get('id') or -1)
     album = g.lib.get_album(query_id)
 
@@ -947,6 +1031,14 @@ def indexes():
                 map_artist_xml(artist, a)
 
         return Response(ET.tostring(root), mimetype='text/xml')
+
+@app.route('/rest/getMusicDirectory', methods=["GET", "POST"])
+@app.route('/rest/getMusicDirectory.view', methods=["GET", "POST"])
+def musicDirectory():
+    # Works pretty much like a file system
+    # Usually Artist first, than Album, than Songs
+    # Challenge: distinguish artists IDs from Album ones and Song ones
+    return
 
 @app.route('/rest/getArtist', methods=["GET", "POST"])
 @app.route('/rest/getArtist.view', methods=["GET", "POST"])
