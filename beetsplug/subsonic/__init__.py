@@ -73,23 +73,33 @@ def map_album(album):
     return {
         "id": album_beetid_to_subid(str(album["id"])),
         "name": album["album"],
+        "title": album["album"],
+        "album": album["album"],
         "artist": album["albumartist"],
         "artistId": artist_name_to_id(album["albumartist"]),
+        "parent": artist_name_to_id(album["albumartist"]),
+        "isDir": True,
         "coverArt": album_beetid_to_subid(str(album["id"])) or "",
         "songCount": 1, # TODO
         "duration": 1, # TODO
         "playCount": 1, # TODO
         "created": timestamp_to_iso(album["added"]),
         "year": album["year"],
-        "genre": album["genre"]
+        "genre": album["genre"],
+        "starred": "1970-01-01T00:00:00.000Z", # TODO
+        "averageRating": 0 # TODO
     }
 
 def map_album_xml(xml, album):
     album = dict(album)
     xml.set("id", album_beetid_to_subid(str(album["id"])))
     xml.set("name", album["album"])
+    xml.set("title", album["album"])
+    xml.set("album", album["album"])
     xml.set("artist", album["albumartist"])
     xml.set("artistId", artist_name_to_id(album["albumartist"]))
+    xml.set("parent", artist_name_to_id(album["albumartist"]))
+    xml.set("isDir", "true")
     xml.set("coverArt", album_beetid_to_subid(str(album["id"])) or "")
     xml.set("songCount", str(1)) # TODO
     xml.set("duration", str(1)) # TODO
@@ -97,6 +107,8 @@ def map_album_xml(xml, album):
     xml.set("created", timestamp_to_iso(album["added"]))
     xml.set("year", str(album["year"]))
     xml.set("genre", album["genre"])
+    xml.set("starred", "1970-01-01T00:00:00.000Z") # TODO
+    xml.set("averageRating", "0") # TODO
 
 def map_album_list(album):
     album = dict(album)
@@ -141,6 +153,7 @@ def map_song(song):
         "parent": album_beetid_to_subid(str(song["album_id"])),
         "isDir": False,
         "title": song["title"],
+        "name": song["title"],
         "album": song["album"],
         "artist": song["albumartist"],
         "track": song["track"],
@@ -149,9 +162,9 @@ def map_song(song):
         "coverArt": album_beetid_to_subid(str(song["album_id"])) or "",
         # TODO "size": 3612800,
         "contentType": mimetypes.guess_type(song["path"].decode('utf-8'))[0],
-        "suffix": song["format"],
+        "suffix": song["format"].lower(),
         "duration": ceil(song["length"]),
-        "bitRate": song["bitrate"]/1000,
+        "bitRate": ceil(song["bitrate"]/1000),
         "path": song["path"].decode('utf-8'),
         "playCount": 1745, #TODO
         "created": timestamp_to_iso(song["added"]),
@@ -167,6 +180,7 @@ def map_song_xml(xml, song):
     xml.set("parent", album_beetid_to_subid(str(song["album_id"])))
     xml.set("isDir", "false")
     xml.set("title", song["title"])
+    xml.set("name", song["title"])
     xml.set("album", song["album"])
     xml.set("artist", song["albumartist"])
     xml.set("track", str(song["track"]))
@@ -174,9 +188,9 @@ def map_song_xml(xml, song):
     xml.set("genre", song["genre"])
     xml.set("coverArt", album_beetid_to_subid(str(song["album_id"])) or "")
     xml.set("contentType", mimetypes.guess_type(song["path"].decode('utf-8'))[0])
-    xml.set("suffix", song["format"])
+    xml.set("suffix", song["format"].lower())
     xml.set("duration", str(ceil(song["length"])))
-    xml.set("bitRate", str(song["bitrate"]/1000))
+    xml.set("bitRate", str(ceil(song["bitrate"]/1000)))
     xml.set("path", song["path"].decode('utf-8'))
     xml.set("playCount", str(1745)) #TODO
     xml.set("created", timestamp_to_iso(song["added"]))
@@ -985,7 +999,6 @@ def indexes():
             })
 
         for index in indicies:
-            print(index)
             index_xml = ET.SubElement(indexes_xml, 'index')
             index_xml.set('name', index["name"])
 
@@ -1000,17 +1013,67 @@ def indexes():
 def musicDirectory():
     # Works pretty much like a file system
     # Usually Artist first, than Album, than Songs
-    # Challenge: distinguish artists IDs from Album ones and Song ones
-
     res_format = request.args.get('f') or 'xml'
     id = request.args.get('id')
 
-    # if id.startswith(ARTIST_ID_PREFIX):
-        # Artist ID
-    # else if id.startswith(ALBUM_ID_PREFIX):
-        # Album ID
-    # else if id.startswith(SONG_ID_PREFIX):
-        # Song ID
+    if id.startswith(ARTIST_ID_PREFIX):
+        artist_id = id
+        artist_name = artist_id_to_name(artist_id)
+        albums = g.lib.albums(artist_name)
+        albums = filter(lambda album: album.albumartist == artist_name, albums)
+
+        if (res_format == 'json'):
+            return flask.jsonify(wrap_res("directory", {
+                "id": artist_id,
+                "name": artist_name,
+                "child": list(map(map_album, albums))
+            }))
+        else:
+            root = get_xml_root()
+            artist_xml = ET.SubElement(root, 'directory')
+            artist_xml.set("id", artist_id)
+            artist_xml.set("name", artist_name)
+
+            for album in albums:
+                a = ET.SubElement(artist_xml, 'child')
+                map_album_xml(a, album)
+
+            return Response(xml_to_string(root), mimetype='text/xml')
+    elif id.startswith(ALBUM_ID_PREFIX):
+        # Album
+        id = int(album_subid_to_beetid(id))
+        album = g.lib.get_album(id)
+        songs = sorted(album.items(), key=lambda song: song.track)
+
+        if (res_format == 'json'):
+            res = wrap_res("directory", {
+                **map_album(album),
+                **{ "child": list(map(map_song, songs)) }
+            })
+            return flask.jsonify(res)
+        else:
+            root = get_xml_root()
+            albumXml = ET.SubElement(root, 'directory')
+            map_album_xml(albumXml, album)
+
+            for song in songs:
+                s = ET.SubElement(albumXml, 'child')
+                map_song_xml(s, song)
+
+            return Response(xml_to_string(root), mimetype='text/xml')
+    elif id.startswith(SONG_ID_PREFIX):
+        # Song
+        id = int(song_subid_to_beetid(id))
+        song = g.lib.get_item(id)
+
+        if (res_format == 'json'):
+            return flask.jsonify(wrap_res("directory", map_song(song)))
+        else:
+            root = get_xml_root()
+            s = ET.SubElement(root, 'directory')
+            map_song_xml(s, song)
+
+            return Response(xml_to_string(root), mimetype='text/xml')
 
 @app.route('/rest/getArtist', methods=["GET", "POST"])
 @app.route('/rest/getArtist.view', methods=["GET", "POST"])
@@ -1018,8 +1081,6 @@ def artist():
     res_format = request.args.get('f') or 'xml'
     artist_id = request.args.get('id')
     artist_name = artist_id_to_name(artist_id)
-    print(artist_id)
-    print(artist_name)
     albums = g.lib.albums(artist_name)
     albums = filter(lambda album: album.albumartist == artist_name, albums)
 
