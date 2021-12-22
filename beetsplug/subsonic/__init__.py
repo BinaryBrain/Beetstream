@@ -292,7 +292,7 @@ def json_generator(items, root, expand=False):
 def is_expand():
     """Returns whether the current request is for an expanded response."""
 
-    return flask.request.args.get('expand') is not None
+    return flask.request.values.get('expand') is not None
 
 
 def is_delete():
@@ -300,7 +300,7 @@ def is_delete():
     files.
     """
 
-    return flask.request.args.get('delete') is not None
+    return flask.request.values.get('delete') is not None
 
 
 def get_method():
@@ -475,7 +475,7 @@ def before_request():
 @app.route('/rest/ping', methods=["GET", "POST"])
 @app.route('/rest/ping.view', methods=["GET", "POST"])
 def ping():
-    res_format = request.args.get('f') or 'xml'
+    res_format = request.values.get('f') or 'xml'
 
     if (res_format == 'json'):
         return flask.jsonify({
@@ -491,7 +491,7 @@ def ping():
 @app.route('/rest/getLicense', methods=["GET", "POST"])
 @app.route('/rest/getLicense.view', methods=["GET", "POST"])
 def getLicense():
-    res_format = request.args.get('f') or 'xml'
+    res_format = request.values.get('f') or 'xml'
 
     if (res_format == 'json'):
         return flask.jsonify(wrap_res("license", {
@@ -511,8 +511,8 @@ def getLicense():
 @app.route('/rest/stream', methods=["GET", "POST"])
 @app.route('/rest/stream.view', methods=["GET", "POST"])
 def stream_song():
-    id = int(song_subid_to_beetid(request.args.get('id')))
-    maxBitrate = int(request.args.get('maxBitRate') or 0)
+    id = int(song_subid_to_beetid(request.values.get('id')))
+    maxBitrate = int(request.values.get('maxBitRate') or 0)
     item = g.lib.get_item(id)
 
     def generate():
@@ -526,8 +526,8 @@ def stream_song():
 @app.route('/rest/getRandomSongs', methods=["GET", "POST"])
 @app.route('/rest/getRandomSongs.view', methods=["GET", "POST"])
 def random_songs():
-    res_format = request.args.get('f') or 'xml'
-    size = int(request.args.get('size') or 0)
+    res_format = request.values.get('f') or 'xml'
+    size = int(request.values.get('size') or 0)
     songs = list(g.lib.items())
     songs = random_objs(songs, -1, size)
 
@@ -550,7 +550,7 @@ def random_songs():
 @app.route('/rest/getPlaylists', methods=["GET", "POST"])
 @app.route('/rest/getPlaylists.view', methods=["GET", "POST"])
 def playlists():
-    res_format = request.args.get('f') or 'xml'
+    res_format = request.values.get('f') or 'xml'
     if (res_format == 'json'):
         return flask.jsonify(wrap_res("playlists", {
             "playlist": []
@@ -565,7 +565,7 @@ def playlists():
 @app.route('/rest/getTopSongs', methods=["GET", "POST"])
 @app.route('/rest/getTopSongs.view', methods=["GET", "POST"])
 def top_songs():
-    res_format = request.args.get('f') or 'xml'
+    res_format = request.values.get('f') or 'xml'
     if (res_format == 'json'):
         return flask.jsonify(wrap_res("topSongs", {}))
     else:
@@ -577,7 +577,7 @@ def top_songs():
 @app.route('/rest/getStarred', methods=["GET", "POST"])
 @app.route('/rest/getStarred.view', methods=["GET", "POST"])
 def starred_songs():
-    res_format = request.args.get('f') or 'xml'
+    res_format = request.values.get('f') or 'xml'
     if (res_format == 'json'):
         return flask.jsonify(wrap_res("starred", {
             "song": []
@@ -590,7 +590,7 @@ def starred_songs():
 @app.route('/rest/getStarred2', methods=["GET", "POST"])
 @app.route('/rest/getStarred2.view', methods=["GET", "POST"])
 def starred2_songs():
-    res_format = request.args.get('f') or 'xml'
+    res_format = request.values.get('f') or 'xml'
     if (res_format == 'json'):
         return flask.jsonify(wrap_res("starred2", {
             "song": []
@@ -612,8 +612,8 @@ def search3():
 
 # TODO handle paging
 def search(version):
-    res_format = request.args.get('f') or 'xml'
-    query = request.args.get('query') or ""
+    res_format = request.values.get('f') or 'xml'
+    query = request.values.get('query') or ""
     songs = list(g.lib.items("title:{}".format(query)))
     albums = list(g.lib.albums("album:{}".format(query)))
     with g.lib.transaction() as tx:
@@ -622,9 +622,9 @@ def search(version):
     artists = list(filter(lambda artist: strip_accents(query).lower() in strip_accents(artist).lower(), artists))
     artists.sort(key=lambda name: strip_accents(name).upper())
 
-    artistCount = request.args.get('artistCount') # TODO handle it
-    albumCount = request.args.get('albumCount') # TODO handle it
-    songCount = request.args.get('songCount') # TODO handle it
+    artistCount = request.values.get('artistCount') # TODO handle it
+    albumCount = request.values.get('albumCount') # TODO handle it
+    songCount = request.values.get('songCount') # TODO handle it
 
     if (res_format == 'json'):
         return flask.jsonify(wrap_res("searchResult{}".format(version), {
@@ -653,7 +653,7 @@ def search(version):
 @app.route('/rest/getMusicFolders', methods=["GET", "POST"])
 @app.route('/rest/getMusicFolders.view', methods=["GET", "POST"])
 def music_folder():
-    res_format = request.args.get('f') or 'xml'
+    res_format = request.values.get('f') or 'xml'
     if (res_format == 'json'):
         return flask.jsonify(wrap_res("musicFolders", {
             "musicFolder": [{
@@ -688,7 +688,7 @@ def item_at_path(path):
 
 @app.route('/item/values/<string:key>')
 def item_unique_field_values(key):
-    sort_key = flask.request.args.get('sort_key', key)
+    sort_key = flask.request.values.get('sort_key', key)
     try:
         values = _get_unique_table_field_values(beets.library.Item, key,
                                                 sort_key)
@@ -701,7 +701,7 @@ def item_unique_field_values(key):
 @app.route('/rest/getGenres', methods=["GET", "POST"])
 @app.route('/rest/getGenres.view', methods=["GET", "POST"])
 def genres():
-    res_format = request.args.get('f') or 'xml'
+    res_format = request.values.get('f') or 'xml'
     with g.lib.transaction() as tx:
         mixed_genres = list(tx.query("""
             SELECT genre, COUNT(*) AS n_song, "" AS n_album FROM items GROUP BY genre
@@ -750,8 +750,8 @@ def genres():
 @app.route('/rest/getSong', methods=["GET", "POST"])
 @app.route('/rest/getSong.view', methods=["GET", "POST"])
 def song():
-    res_format = request.args.get('f') or 'xml'
-    id = int(song_subid_to_beetid(request.args.get('id')))
+    res_format = request.values.get('f') or 'xml'
+    id = int(song_subid_to_beetid(request.values.get('id')))
     song = g.lib.get_item(id)
 
     if (res_format == 'json'):
@@ -766,8 +766,8 @@ def song():
 @app.route('/rest/getSongsByGenre', methods=["GET", "POST"])
 @app.route('/rest/getSongsByGenre.view', methods=["GET", "POST"])
 def songs_by_genre():
-    res_format = request.args.get('f') or 'xml'
-    genre = request.args.get('genre')
+    res_format = request.values.get('f') or 'xml'
+    genre = request.values.get('genre')
     songs = list(g.lib.items('genre:' + genre))
 
     if (res_format == 'json'):
@@ -787,8 +787,8 @@ def songs_by_genre():
 @app.route('/rest/getAlbum', methods=["GET", "POST"])
 @app.route('/rest/getAlbum.view', methods=["GET", "POST"])
 def get_album():
-    res_format = request.args.get('f') or 'xml'
-    id = int(album_subid_to_beetid(request.args.get('id')))
+    res_format = request.values.get('f') or 'xml'
+    id = int(album_subid_to_beetid(request.values.get('id')))
 
     album = g.lib.get_album(id)
     songs = sorted(album.items(), key=lambda song: song.track)
@@ -813,14 +813,14 @@ def get_album():
 @app.route('/rest/getAlbumList', methods=["GET", "POST"])
 @app.route('/rest/getAlbumList.view', methods=["GET", "POST"])
 def album_list():
-    res_format = request.args.get('f') or 'xml'
+    res_format = request.values.get('f') or 'xml'
     # TODO possibleTypes = ['random', 'frequent', 'recent', 'starred']
-    sort_by = request.args.get('type') or 'alphabeticalByName' # TODO
-    size = int(request.args.get('size') or 0) # TODO
-    offset = int(request.args.get('offset') or 0) # TODO
-    fromYear = int(request.args.get('fromYear') or 0)
-    toYear = int(request.args.get('toYear') or 3000)
-    genre = request.args.get('genre')
+    sort_by = request.values.get('type') or 'alphabeticalByName' # TODO
+    size = int(request.values.get('size') or 0) # TODO
+    offset = int(request.values.get('offset') or 0) # TODO
+    fromYear = int(request.values.get('fromYear') or 0)
+    toYear = int(request.values.get('toYear') or 3000)
+    genre = request.values.get('genre')
 
     albums = list(g.lib.albums())
 
@@ -860,14 +860,14 @@ def album_list():
 @app.route('/rest/getAlbumList2', methods=["GET", "POST"])
 @app.route('/rest/getAlbumList2.view', methods=["GET", "POST"])
 def album_list_2():
-    res_format = request.args.get('f') or 'xml'
+    res_format = request.values.get('f') or 'xml'
     # TODO possibleTypes = ['random', 'frequent', 'recent', 'starred']
-    sort_by = request.args.get('type') or 'alphabeticalByName' # TODO
-    size = int(request.args.get('size') or 0) # TODO
-    offset = int(request.args.get('offset') or 0) # TODO
-    fromYear = int(request.args.get('fromYear') or 0)
-    toYear = int(request.args.get('toYear') or 3000)
-    genre = request.args.get('genre')
+    sort_by = request.values.get('type') or 'alphabeticalByName' # TODO
+    size = int(request.values.get('size') or 0) # TODO
+    offset = int(request.values.get('offset') or 0) # TODO
+    fromYear = int(request.values.get('fromYear') or 0)
+    toYear = int(request.values.get('toYear') or 3000)
+    genre = request.values.get('genre')
 
     albums = list(g.lib.albums())
 
@@ -907,8 +907,8 @@ def album_list_2():
 @app.route('/rest/getCoverArt', methods=["GET", "POST"])
 @app.route('/rest/getCoverArt.view', methods=["GET", "POST"])
 def cover_art_file():
-    query_id = int(album_subid_to_beetid(request.args.get('id')) or -1)
-    size = request.args.get('size')
+    query_id = int(album_subid_to_beetid(request.values.get('id')) or -1)
+    size = request.values.get('size')
     album = g.lib.get_album(query_id)
 
     # Fallback on item id. Some apps use this
@@ -940,7 +940,7 @@ def cover_art_file():
 @app.route('/rest/getArtists', methods=["GET", "POST"])
 @app.route('/rest/getArtists.view', methods=["GET", "POST"])
 def all_artists():
-    res_format = request.args.get('f') or 'xml'
+    res_format = request.values.get('f') or 'xml'
     with g.lib.transaction() as tx:
         rows = tx.query("SELECT DISTINCT albumartist FROM albums")
     all_artists = [row[0] for row in rows]
@@ -970,7 +970,7 @@ def all_artists():
 @app.route('/rest/getIndexes', methods=["GET", "POST"])
 @app.route('/rest/getIndexes.view', methods=["GET", "POST"])
 def indexes():
-    res_format = request.args.get('f') or 'xml'
+    res_format = request.values.get('f') or 'xml'
     with g.lib.transaction() as tx:
         rows = tx.query("SELECT DISTINCT albumartist FROM albums")
     all_artists = [row[0] for row in rows]
@@ -1025,8 +1025,8 @@ def indexes():
 def musicDirectory():
     # Works pretty much like a file system
     # Usually Artist first, than Album, than Songs
-    res_format = request.args.get('f') or 'xml'
-    id = request.args.get('id')
+    res_format = request.values.get('f') or 'xml'
+    id = request.values.get('id')
 
     if id.startswith(ARTIST_ID_PREFIX):
         artist_id = id
@@ -1090,8 +1090,8 @@ def musicDirectory():
 @app.route('/rest/getArtist', methods=["GET", "POST"])
 @app.route('/rest/getArtist.view', methods=["GET", "POST"])
 def artist():
-    res_format = request.args.get('f') or 'xml'
-    artist_id = request.args.get('id')
+    res_format = request.values.get('f') or 'xml'
+    artist_id = request.values.get('id')
     artist_name = artist_id_to_name(artist_id)
     albums = g.lib.albums(artist_name)
     albums = filter(lambda album: album.albumartist == artist_name, albums)
@@ -1117,8 +1117,8 @@ def artist():
 @app.route('/rest/getArtistInfo2', methods=["GET", "POST"])
 @app.route('/rest/getArtistInfo2.view', methods=["GET", "POST"])
 def artistInfo2():
-    res_format = request.args.get('f') or 'xml'
-    artist_name = artist_id_to_name(request.args.get('id'))
+    res_format = request.values.get('f') or 'xml'
+    artist_name = artist_id_to_name(request.values.get('id'))
 
     if (res_format == 'json'):
         return flask.jsonify(wrap_res("artistInfo2", {
@@ -1165,7 +1165,7 @@ def stats():
 @app.route('/rest/getUser', methods=["GET", "POST"])
 @app.route('/rest/getUser.view', methods=["GET", "POST"])
 def user():
-    res_format = request.args.get('f') or 'xml'
+    res_format = request.values.get('f') or 'xml'
     if (res_format == 'json'):
         return flask.jsonify(wrap_res("user", {
             "username" : "admin",
