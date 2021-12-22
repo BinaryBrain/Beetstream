@@ -50,6 +50,9 @@ def strip_accents(s):
 def timestamp_to_iso(timestamp):
     return datetime.fromtimestamp(int(timestamp)).isoformat()
 
+def is_json(res_format):
+    return res_format == 'json' or res_format == 'jsonp'
+
 def wrap_res(key, json):
     return {
         "subsonic-response": {
@@ -58,6 +61,13 @@ def wrap_res(key, json):
             key: json
         }
     }
+
+def jsonpify(request, data):
+    if request.values.get("f") == "jsonp":
+        callback = request.values.get("callback")
+        return f"{callback}({json.dumps(data)});"
+    else:
+        return flask.jsonify(data)
 
 def get_xml_root():
     root = ET.Element('subsonic-response')
@@ -328,7 +338,7 @@ def resource(name, patchable=False):
                     entity.try_sync(True, False)  # write, don't move
 
                 if len(entities) == 1:
-                    return flask.jsonify(_rep(entities[0], expand=is_expand()))
+                    return jsonpify(request, _rep(entities[0], expand=is_expand()))
                 elif entities:
                     return app.response_class(
                         json_generator(entities, root=name),
@@ -337,7 +347,7 @@ def resource(name, patchable=False):
 
             elif get_method() == "GET":
                 if len(entities) == 1:
-                    return flask.jsonify(_rep(entities[0], expand=is_expand()))
+                    return jsonpify(request, _rep(entities[0], expand=is_expand()))
                 elif entities:
                     return app.response_class(
                         json_generator(entities, root=name),
@@ -477,8 +487,8 @@ def before_request():
 def ping():
     res_format = request.values.get('f') or 'xml'
 
-    if (res_format == 'json'):
-        return flask.jsonify({
+    if (is_json(res_format)):
+        return jsonpify(request, {
             "subsonic-response": {
                 "status": "ok",
                 "version": "1.16.1"
@@ -493,8 +503,8 @@ def ping():
 def getLicense():
     res_format = request.values.get('f') or 'xml'
 
-    if (res_format == 'json'):
-        return flask.jsonify(wrap_res("license", {
+    if (is_json(res_format)):
+        return jsonpify(request, wrap_res("license", {
             "valid": True,
             "email": "foo@example.com",
             "trialExpires": "3000-01-01T00:00:00.000Z"
@@ -531,8 +541,8 @@ def random_songs():
     songs = list(g.lib.items())
     songs = random_objs(songs, -1, size)
 
-    if (res_format == 'json'):
-        return flask.jsonify(wrap_res("randomSongs", {
+    if (is_json(res_format)):
+        return jsonpify(request, wrap_res("randomSongs", {
             "song": list(map(map_song, songs))
         }))
     else:
@@ -551,8 +561,8 @@ def random_songs():
 @app.route('/rest/getPlaylists.view', methods=["GET", "POST"])
 def playlists():
     res_format = request.values.get('f') or 'xml'
-    if (res_format == 'json'):
-        return flask.jsonify(wrap_res("playlists", {
+    if (is_json(res_format)):
+        return jsonpify(request, wrap_res("playlists", {
             "playlist": []
         }))
     else:
@@ -566,8 +576,8 @@ def playlists():
 @app.route('/rest/getTopSongs.view', methods=["GET", "POST"])
 def top_songs():
     res_format = request.values.get('f') or 'xml'
-    if (res_format == 'json'):
-        return flask.jsonify(wrap_res("topSongs", {}))
+    if (is_json(res_format)):
+        return jsonpify(request, wrap_res("topSongs", {}))
     else:
         root = get_xml_root()
         ET.SubElement(root, 'topSongs')
@@ -578,8 +588,8 @@ def top_songs():
 @app.route('/rest/getStarred.view', methods=["GET", "POST"])
 def starred_songs():
     res_format = request.values.get('f') or 'xml'
-    if (res_format == 'json'):
-        return flask.jsonify(wrap_res("starred", {
+    if (is_json(res_format)):
+        return jsonpify(request, wrap_res("starred", {
             "song": []
         }))
     else:
@@ -591,8 +601,8 @@ def starred_songs():
 @app.route('/rest/getStarred2.view', methods=["GET", "POST"])
 def starred2_songs():
     res_format = request.values.get('f') or 'xml'
-    if (res_format == 'json'):
-        return flask.jsonify(wrap_res("starred2", {
+    if (is_json(res_format)):
+        return jsonpify(request, wrap_res("starred2", {
             "song": []
         }))
     else:
@@ -626,8 +636,8 @@ def search(version):
     albumCount = request.values.get('albumCount') # TODO handle it
     songCount = request.values.get('songCount') # TODO handle it
 
-    if (res_format == 'json'):
-        return flask.jsonify(wrap_res("searchResult{}".format(version), {
+    if (is_json(res_format)):
+        return jsonpify(request, wrap_res("searchResult{}".format(version), {
             "artist": list(map(map_artist, artists)),
             "album": list(map(map_album, albums)),
             "song": list(map(map_song, songs))
@@ -654,8 +664,8 @@ def search(version):
 @app.route('/rest/getMusicFolders.view', methods=["GET", "POST"])
 def music_folder():
     res_format = request.values.get('f') or 'xml'
-    if (res_format == 'json'):
-        return flask.jsonify(wrap_res("musicFolders", {
+    if (is_json(res_format)):
+        return jsonpify(request, wrap_res("musicFolders", {
             "musicFolder": [{
                 "id": 0,
                 "name": "Music"
@@ -681,7 +691,7 @@ def item_at_path(path):
     query = beets.library.PathQuery('path', path.encode('utf-8'))
     item = g.lib.items(query).get()
     if item:
-        return flask.jsonify(_rep(item))
+        return jsonpify(request, _rep(item))
     else:
         return flask.abort(404)
 
@@ -694,7 +704,7 @@ def item_unique_field_values(key):
                                                 sort_key)
     except KeyError:
         return flask.abort(404)
-    return flask.jsonify(values=values)
+    return jsonpify(request, values=values)
 
 
 # Albums
@@ -723,7 +733,7 @@ def genres():
     genres.reverse()
     genres = filter(lambda genre: genre[0] != u"", genres)
 
-    if (res_format == 'json'):
+    if (is_json(res_format)):
         def map_genre(genre):
             return {
                 "value": genre[0],
@@ -731,7 +741,7 @@ def genres():
                 "albumCount": genre[2]
             }
 
-        return flask.jsonify(wrap_res("genres", {
+        return jsonpify(request, wrap_res("genres", {
             "genre": list(map(map_genre, genres))
         }))
     else:
@@ -754,8 +764,8 @@ def song():
     id = int(song_subid_to_beetid(request.values.get('id')))
     song = g.lib.get_item(id)
 
-    if (res_format == 'json'):
-        return flask.jsonify(wrap_res("song", map_song(song)))
+    if (is_json(res_format)):
+        return jsonpify(request, wrap_res("song", map_song(song)))
     else:
         root = get_xml_root()
         s = ET.SubElement(root, 'song')
@@ -770,8 +780,8 @@ def songs_by_genre():
     genre = request.values.get('genre')
     songs = list(g.lib.items('genre:' + genre))
 
-    if (res_format == 'json'):
-        return flask.jsonify(wrap_res("songsByGenre", {
+    if (is_json(res_format)):
+        return jsonpify(request, wrap_res("songsByGenre", {
             "song": list(map(map_song, songs))
         }))
     else:
@@ -793,12 +803,12 @@ def get_album():
     album = g.lib.get_album(id)
     songs = sorted(album.items(), key=lambda song: song.track)
 
-    if (res_format == 'json'):
+    if (is_json(res_format)):
         res = wrap_res("album", {
             **map_album(album),
             **{ "song": list(map(map_song, songs)) }
         })
-        return flask.jsonify(res)
+        return jsonpify(request, res)
     else:
         root = get_xml_root()
         albumXml = ET.SubElement(root, 'album')
@@ -843,8 +853,8 @@ def album_list():
             albums = list(filter(lambda album: dict(album)['year'] >= toYear and dict(album)['year'] <= fromYear, albums))
             albums.sort(key=lambda album: int(dict(album)['year']), reverse=True)
 
-    if (res_format == 'json'):
-        return flask.jsonify(wrap_res("albumList", {
+    if (is_json(res_format)):
+        return jsonpify(request, wrap_res("albumList", {
             "album": list(map(map_album_list, albums))
         }))
     else:
@@ -890,8 +900,8 @@ def album_list_2():
             albums = list(filter(lambda album: dict(album)['year'] >= toYear and dict(album)['year'] <= fromYear, albums))
             albums.sort(key=lambda album: int(dict(album)['year']), reverse=True)
 
-    if (res_format == 'json'):
-        return flask.jsonify(wrap_res("albumList2", {
+    if (is_json(res_format)):
+        return jsonpify(request, wrap_res("albumList2", {
             "album": list(map(map_album, albums))
         }))
     else:
@@ -947,8 +957,8 @@ def all_artists():
     all_artists.sort(key=lambda name: strip_accents(name).upper())
 
     # TODO Proper index
-    if (res_format == 'json'):
-        return flask.jsonify(wrap_res("artists", {
+    if (is_json(res_format)):
+        return jsonpify(request, wrap_res("artists", {
             "ignoredArticles": "The El La Los Las Le",
             "index": [{
                 "name": "*",
@@ -986,7 +996,7 @@ def indexes():
             indicies_dict[index] = []
         indicies_dict[index].append(name)
 
-    if (res_format == 'json'):
+    if (is_json(res_format)):
         indicies = []
         for index, artist_names in indicies_dict.items():
             indicies.append({
@@ -994,7 +1004,7 @@ def indexes():
                 "artist": list(map(map_artist, artist_names))
             })
 
-        return flask.jsonify(wrap_res("indexes", {
+        return jsonpify(request, wrap_res("indexes", {
             "ignoredArticles": "",
             "lastModified": int(time.time() * 1000),
             "index": indicies
@@ -1035,8 +1045,8 @@ def musicDirectory():
         albums = g.lib.albums(artist_name)
         albums = filter(lambda album: album.albumartist == artist_name, albums)
 
-        if (res_format == 'json'):
-            return flask.jsonify(wrap_res("directory", {
+        if (is_json(res_format)):
+            return jsonpify(request, wrap_res("directory", {
                 "id": artist_id,
                 "name": artist_name,
                 "child": list(map(map_album, albums))
@@ -1058,12 +1068,12 @@ def musicDirectory():
         album = g.lib.get_album(id)
         songs = sorted(album.items(), key=lambda song: song.track)
 
-        if (res_format == 'json'):
+        if (is_json(res_format)):
             res = wrap_res("directory", {
                 **map_album(album),
                 **{ "child": list(map(map_song, songs)) }
             })
-            return flask.jsonify(res)
+            return jsonpify(request, res)
         else:
             root = get_xml_root()
             albumXml = ET.SubElement(root, 'directory')
@@ -1079,8 +1089,8 @@ def musicDirectory():
         id = int(song_subid_to_beetid(id))
         song = g.lib.get_item(id)
 
-        if (res_format == 'json'):
-            return flask.jsonify(wrap_res("directory", map_song(song)))
+        if (is_json(res_format)):
+            return jsonpify(request, wrap_res("directory", map_song(song)))
         else:
             root = get_xml_root()
             s = ET.SubElement(root, 'directory')
@@ -1097,8 +1107,8 @@ def artist():
     albums = g.lib.albums(artist_name)
     albums = filter(lambda album: album.albumartist == artist_name, albums)
 
-    if (res_format == 'json'):
-        return flask.jsonify(wrap_res("artist", {
+    if (is_json(res_format)):
+        return jsonpify(request, wrap_res("artist", {
             "id": artist_id,
             "artist_name": artist_name,
             "album": list(map(map_album, albums))
@@ -1121,8 +1131,8 @@ def artistInfo2():
     res_format = request.values.get('f') or 'xml'
     artist_name = artist_id_to_name(request.values.get('id'))
 
-    if (res_format == 'json'):
-        return flask.jsonify(wrap_res("artistInfo2", {
+    if (is_json(res_format)):
+        return jsonpify(request, wrap_res("artistInfo2", {
             "biography": f"wow. much artist. very {artist_name}",
             "musicBrainzId": "",
             "lastFmUrl": "",
@@ -1156,7 +1166,7 @@ def stats():
     with g.lib.transaction() as tx:
         item_rows = tx.query("SELECT COUNT(*) FROM items")
         album_rows = tx.query("SELECT COUNT(*) FROM albums")
-    return flask.jsonify({
+    return jsonpify(request, {
         'items': item_rows[0][0],
         'albums': album_rows[0][0],
     })
@@ -1167,8 +1177,8 @@ def stats():
 @app.route('/rest/getUser.view', methods=["GET", "POST"])
 def user():
     res_format = request.values.get('f') or 'xml'
-    if (res_format == 'json'):
-        return flask.jsonify(wrap_res("user", {
+    if (is_json(res_format)):
+        return jsonpify(request, wrap_res("user", {
             "username" : "admin",
             "email" : "foo@example.com",
             "scrobblingEnabled" : True,
