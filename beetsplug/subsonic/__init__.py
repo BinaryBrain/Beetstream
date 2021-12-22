@@ -924,7 +924,7 @@ def cover_art_file():
     # Fallback on item id. Some apps use this
     if not album:
         item = g.lib.get_item(query_id)
-        if item:
+        if item is not None and item.album_id is not None:
             album = g.lib.get_album(item.album_id)
         else:
             flask.abort(404)
