@@ -922,12 +922,12 @@ def cover_art_file():
     if album and album.artpath:
         image_path = album.artpath.decode('utf-8')
 
-        if size is not None:
+        if size is not None and int(size) > 0:
             size = int(size)
             with Image.open(image_path) as image:
                 bytes_io = io.BytesIO()
                 image = image.resize((size, size))
-                image.save(bytes_io, 'PNG')
+                image.convert('RGB').save(bytes_io, 'PNG')
                 bytes_io.seek(0)
                 return flask.send_file(bytes_io, mimetype='image/png')
 
@@ -946,6 +946,7 @@ def all_artists():
     all_artists = [row[0] for row in rows]
     all_artists.sort(key=lambda name: strip_accents(name).upper())
 
+    # TODO Proper index
     if (res_format == 'json'):
         return flask.jsonify(wrap_res("artists", {
             "ignoredArticles": "The El La Los Las Le",
