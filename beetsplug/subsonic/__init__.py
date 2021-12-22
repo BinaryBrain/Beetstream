@@ -35,6 +35,8 @@ import time
 import xml.etree.cElementTree as ET
 from math import ceil
 from flask_cors import CORS
+from PIL import Image
+import io
 
 ARTIST_ID_PREFIX = "1"
 ALBUM_ID_PREFIX = "2"
@@ -905,8 +907,8 @@ def album_list_2():
 @app.route('/rest/getCoverArt', methods=["GET", "POST"])
 @app.route('/rest/getCoverArt.view', methods=["GET", "POST"])
 def cover_art_file():
-    # TODO Handle size (breaks official app layout)
     query_id = int(album_subid_to_beetid(request.args.get('id')) or -1)
+    size = request.args.get('size')
     album = g.lib.get_album(query_id)
 
     # Fallback on item id. Some apps use this
@@ -918,12 +920,22 @@ def cover_art_file():
             flask.abort(404)
 
     if album and album.artpath:
-        pic = album.artpath.decode('utf-8')
-        return flask.send_file(pic)
+        image_path = album.artpath.decode('utf-8')
+
+        if size is not None:
+            size = int(size)
+            with Image.open(image_path) as image:
+                bytes_io = io.BytesIO()
+                image = image.resize((size, size))
+                image.save(bytes_io, 'PNG')
+                bytes_io.seek(0)
+                return flask.send_file(bytes_io, mimetype='image/png')
+
+        return flask.send_file(image_path)
     else:
         return flask.abort(404)
 
-# Artists.
+# Artists
 
 @app.route('/rest/getArtists', methods=["GET", "POST"])
 @app.route('/rest/getArtists.view', methods=["GET", "POST"])
