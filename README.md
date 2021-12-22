@@ -4,14 +4,14 @@
 
 ## Motivation
 
-I personnaly use `beets` to manage my music library on a Raspberry Pi but when I was looking for a way to stream it to my phone I couldn't find any confortable, suitable and free options.  
-I tried [AirSonic](https://airsonic.github.io) and [SubSonic](http://www.subsonic.org), [Plex](https://www.plex.tv) and some other tools but a lot of these solutions want to manage the library as they need (but I prefer `beets`) and AirSonic/SubSonic were quite slow and CPU intensive and seemed to have a lot of overhead just to browse albums and send music files. Thus said, SubSonic APIs are good and implemented by a lot of different [clients](#supported-clients), so I decieded to re-implement the server side but based on `beets` database (and some piece of code).
+I personnaly use Beets to manage my music library on a Raspberry Pi but when I was looking for a way to stream it to my phone I couldn't find any confortable, suitable and free options.  
+I tried [AirSonic](https://airsonic.github.io) and [SubSonic](http://www.subsonic.org), [Plex](https://www.plex.tv) and some other tools but a lot of these solutions want to manage the library as they need (but I prefer Beets) and AirSonic/SubSonic were quite slow and CPU intensive and seemed to have a lot of overhead just to browse albums and send music files. Thus said, SubSonic APIs are good and implemented by a lot of different [clients](#supported-clients), so I decieded to re-implement the server side but based on Beets database (and some piece of code).
 
 ## Install & Run
 
 Requires Python 3.8 or newer.
 
-1) First of all, you need to [install `beets`](https://beets.readthedocs.io/en/stable/guides/main.html):
+1) First of all, you need to [install Beets](https://beets.readthedocs.io/en/stable/guides/main.html):
 
 2) Install the dependancies with:
 
