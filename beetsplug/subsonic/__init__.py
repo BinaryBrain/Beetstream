@@ -627,7 +627,6 @@ def search2():
 def search3():
     return search(3)
 
-# TODO handle paging
 def search(version):
     res_format = request.values.get('f') or 'xml'
     query = request.values.get('query') or ""
