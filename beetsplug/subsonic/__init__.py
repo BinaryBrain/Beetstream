@@ -245,6 +245,15 @@ def song_beetid_to_subid(id):
 def song_subid_to_beetid(id):
     return id[len(SONG_ID_PREFIX):]
 
+def handleSizeAndOffset(collection, size, offset):
+    if size is not None:
+        if offset is not None:
+            return collection[offset:offset + size]
+        else:
+            return collection[0:size]
+    else:
+        return collection
+
 def _rep(obj, expand=False):
     """Get a flat -- i.e., JSON-ish -- representation of a beets Item or
     Album object. For Albums, `expand` dictates whether tracks are
@@ -537,7 +546,7 @@ def stream_song():
 @app.route('/rest/getRandomSongs.view', methods=["GET", "POST"])
 def random_songs():
     res_format = request.values.get('f') or 'xml'
-    size = int(request.values.get('size') or 0)
+    size = int(request.values.get('size') or 10)
     songs = list(g.lib.items())
     songs = random_objs(songs, -1, size)
 
@@ -624,17 +633,22 @@ def search3():
 def search(version):
     res_format = request.values.get('f') or 'xml'
     query = request.values.get('query') or ""
-    songs = list(g.lib.items("title:{}".format(query)))
-    albums = list(g.lib.albums("album:{}".format(query)))
+    artistCount = int(request.values.get('artistCount') or 20)
+    artistOffset = int(request.values.get('artistOffset') or 0)
+    albumCount = int(request.values.get('albumCount') or 20)
+    albumOffset = int(request.values.get('albumOffset') or 0)
+    songCount = int(request.values.get('songCount') or 20)
+    songOffset = int(request.values.get('songOffset') or 0)
+
+    songs = handleSizeAndOffset(list(g.lib.items("title:{}".format(query))), songCount, songOffset)
+    albums = handleSizeAndOffset(list(g.lib.albums("album:{}".format(query))), albumCount, albumOffset)
+
     with g.lib.transaction() as tx:
         rows = tx.query("SELECT DISTINCT albumartist FROM albums")
     artists = [row[0] for row in rows]
     artists = list(filter(lambda artist: strip_accents(query).lower() in strip_accents(artist).lower(), artists))
+    artists = handleSizeAndOffset(artists, artistCount, artistOffset)
     artists.sort(key=lambda name: strip_accents(name).upper())
-
-    artistCount = request.values.get('artistCount') # TODO handle it
-    albumCount = request.values.get('albumCount') # TODO handle it
-    songCount = request.values.get('songCount') # TODO handle it
 
     if (is_json(res_format)):
         return jsonpify(request, wrap_res("searchResult{}".format(version), {
@@ -778,7 +792,10 @@ def song():
 def songs_by_genre():
     res_format = request.values.get('f') or 'xml'
     genre = request.values.get('genre')
-    songs = list(g.lib.items('genre:' + genre))
+    count = int(request.values.get('count') or 10)
+    offset = int(request.values.get('offset') or 0)
+
+    songs = handleSizeAndOffset(list(g.lib.items('genre:' + genre)), count, offset)
 
     if (is_json(res_format)):
         return jsonpify(request, wrap_res("songsByGenre", {
@@ -826,13 +843,13 @@ def album_list():
     res_format = request.values.get('f') or 'xml'
     # TODO possibleTypes = ['random', 'frequent', 'recent', 'starred']
     sort_by = request.values.get('type') or 'alphabeticalByName' # TODO
-    size = int(request.values.get('size') or 0) # TODO
-    offset = int(request.values.get('offset') or 0) # TODO
+    size = int(request.values.get('size') or 10)
+    offset = int(request.values.get('offset') or 0)
     fromYear = int(request.values.get('fromYear') or 0)
     toYear = int(request.values.get('toYear') or 3000)
     genre = request.values.get('genre')
 
-    albums = list(g.lib.albums())
+    albums = handleSizeAndOffset(list(g.lib.albums()), size, offset)
 
     if sort_by == 'newest':
         albums.sort(key=lambda album: int(dict(album)['added']), reverse=True)
@@ -873,13 +890,13 @@ def album_list_2():
     res_format = request.values.get('f') or 'xml'
     # TODO possibleTypes = ['random', 'frequent', 'recent', 'starred']
     sort_by = request.values.get('type') or 'alphabeticalByName' # TODO
-    size = int(request.values.get('size') or 0) # TODO
-    offset = int(request.values.get('offset') or 0) # TODO
+    size = int(request.values.get('size') or 10)
+    offset = int(request.values.get('offset') or 0)
     fromYear = int(request.values.get('fromYear') or 0)
     toYear = int(request.values.get('toYear') or 3000)
     genre = request.values.get('genre')
 
-    albums = list(g.lib.albums())
+    albums = handleSizeAndOffset(list(g.lib.albums()), size, offset)
 
     if sort_by == 'newest':
         albums.sort(key=lambda album: int(dict(album)['added']), reverse=True)
