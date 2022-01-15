@@ -14,8 +14,6 @@
 # included in all copies or substantial portions of the Software.
 
 """A Web interface to beets."""
-from __future__ import division, absolute_import, print_function
-
 from beets.plugins import BeetsPlugin
 from beets import ui
 from beets import util
@@ -647,8 +645,8 @@ def search(version):
         rows = tx.query("SELECT DISTINCT albumartist FROM albums")
     artists = [row[0] for row in rows]
     artists = list(filter(lambda artist: strip_accents(query).lower() in strip_accents(artist).lower(), artists))
-    artists = handleSizeAndOffset(artists, artistCount, artistOffset)
     artists.sort(key=lambda name: strip_accents(name).upper())
+    artists = handleSizeAndOffset(artists, artistCount, artistOffset)
 
     if (is_json(res_format)):
         return jsonpify(request, wrap_res("searchResult{}".format(version), {
@@ -840,53 +838,15 @@ def get_album():
 @app.route('/rest/getAlbumList', methods=["GET", "POST"])
 @app.route('/rest/getAlbumList.view', methods=["GET", "POST"])
 def album_list():
-    res_format = request.values.get('f') or 'xml'
-    # TODO possibleTypes = ['random', 'frequent', 'recent', 'starred']
-    sort_by = request.values.get('type') or 'alphabeticalByName' # TODO
-    size = int(request.values.get('size') or 10)
-    offset = int(request.values.get('offset') or 0)
-    fromYear = int(request.values.get('fromYear') or 0)
-    toYear = int(request.values.get('toYear') or 3000)
-    genre = request.values.get('genre')
+    return get_album_list(1)
 
-    albums = handleSizeAndOffset(list(g.lib.albums()), size, offset)
-
-    if sort_by == 'newest':
-        albums.sort(key=lambda album: int(dict(album)['added']), reverse=True)
-    elif sort_by == 'alphabeticalByName':
-        albums.sort(key=lambda album: strip_accents(dict(album)['album']).upper())
-    elif sort_by == 'alphabeticalByArtist':
-        albums.sort(key=lambda album: strip_accents(dict(album)['albumartist']).upper())
-    elif sort_by == 'alphabeticalByArtist':
-        albums.sort(key=lambda album: strip_accents(dict(album)['albumartist']).upper())
-    elif sort_by == 'byGenre':
-        albums = filter(lambda album: dict(album)['genre'].lower() == genre.lower(), albums)
-    elif sort_by == 'byYear':
-        # TODO use month and day data to sort
-        if fromYear <= toYear:
-            albums = list(filter(lambda album: dict(album)['year'] >= fromYear and dict(album)['year'] <= toYear, albums))
-            albums.sort(key=lambda album: int(dict(album)['year']))
-        else:
-            albums = list(filter(lambda album: dict(album)['year'] >= toYear and dict(album)['year'] <= fromYear, albums))
-            albums.sort(key=lambda album: int(dict(album)['year']), reverse=True)
-
-    if (is_json(res_format)):
-        return jsonpify(request, wrap_res("albumList", {
-            "album": list(map(map_album_list, albums))
-        }))
-    else:
-        root = get_xml_root()
-        album_list_xml = ET.SubElement(root, 'albumList')
-
-        for album in albums:
-            a = ET.SubElement(album_list_xml, 'album')
-            map_album_list_xml(a, album)
-
-        return Response(xml_to_string(root), mimetype='text/xml')
 
 @app.route('/rest/getAlbumList2', methods=["GET", "POST"])
 @app.route('/rest/getAlbumList2.view', methods=["GET", "POST"])
 def album_list_2():
+    return get_album_list(2)
+
+def get_album_list(version):
     res_format = request.values.get('f') or 'xml'
     # TODO possibleTypes = ['random', 'frequent', 'recent', 'starred']
     sort_by = request.values.get('type') or 'alphabeticalByName' # TODO
@@ -896,7 +856,7 @@ def album_list_2():
     toYear = int(request.values.get('toYear') or 3000)
     genre = request.values.get('genre')
 
-    albums = handleSizeAndOffset(list(g.lib.albums()), size, offset)
+    albums = list(g.lib.albums())
 
     if sort_by == 'newest':
         albums.sort(key=lambda album: int(dict(album)['added']), reverse=True)
@@ -917,19 +877,37 @@ def album_list_2():
             albums = list(filter(lambda album: dict(album)['year'] >= toYear and dict(album)['year'] <= fromYear, albums))
             albums.sort(key=lambda album: int(dict(album)['year']), reverse=True)
 
-    if (is_json(res_format)):
-        return jsonpify(request, wrap_res("albumList2", {
-            "album": list(map(map_album, albums))
-        }))
-    else:
-        root = get_xml_root()
-        album_list_xml = ET.SubElement(root, 'albumList2')
+    albums = handleSizeAndOffset(albums, size, offset)
 
-        for album in albums:
-            a = ET.SubElement(album_list_xml, 'album')
-            map_album_xml(a, album)
+    if version == 1:
+        if (is_json(res_format)):
+            return jsonpify(request, wrap_res("albumList", {
+                "album": list(map(map_album_list, albums))
+            }))
+        else:
+            root = get_xml_root()
+            album_list_xml = ET.SubElement(root, 'albumList')
 
-        return Response(xml_to_string(root), mimetype='text/xml')
+            for album in albums:
+                a = ET.SubElement(album_list_xml, 'album')
+                map_album_list_xml(a, album)
+
+            return Response(xml_to_string(root), mimetype='text/xml')
+
+    elif version == 2:
+        if (is_json(res_format)):
+            return jsonpify(request, wrap_res("albumList2", {
+                "album": list(map(map_album, albums))
+            }))
+        else:
+            root = get_xml_root()
+            album_list_xml = ET.SubElement(root, 'albumList2')
+
+            for album in albums:
+                a = ET.SubElement(album_list_xml, 'album')
+                map_album_xml(a, album)
+
+            return Response(xml_to_string(root), mimetype='text/xml')
 
 @app.route('/rest/getCoverArt', methods=["GET", "POST"])
 @app.route('/rest/getCoverArt.view', methods=["GET", "POST"])
