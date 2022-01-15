@@ -46,9 +46,9 @@ All clients below are working with this server. By "working", it means one can u
 - [Audinaut](https://play.google.com/store/apps/details?id=net.nullsum.audinaut)
 - [Ultrasonic](https://play.google.com/store/apps/details?id=org.moire.ultrasonic)
 - [GoSONIC](https://play.google.com/store/apps/details?id=com.readysteadygosoftware.gosonic)
-- [Subtracks](https://play.google.com/store/apps/details?id=com.subtracks) (currently very slow)
-- [Music Stash](https://play.google.com/store/apps/details?id=com.ghenry22.mymusicstash) (currently very slow)
-- [substreamer](https://play.google.com/store/apps/details?id=com.ghenry22.substream2) (currently very slow and seems to play random songs)
+- [Subtracks](https://play.google.com/store/apps/details?id=com.subtracks)
+- [Music Stash](https://play.google.com/store/apps/details?id=com.ghenry22.mymusicstash)
+- [substreamer](https://play.google.com/store/apps/details?id=com.ghenry22.substream2)
 
 Some apps are slow because pagination is not properly handled yet.
 
