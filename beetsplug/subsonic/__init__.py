@@ -227,10 +227,12 @@ def map_artist_xml(xml, artist_name):
     xml.set("artistImageUrl", "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg")
 
 def artist_name_to_id(name):
-    return f"{ARTIST_ID_PREFIX}{name}"
+    base64_name = base64.b64encode(name.encode('utf-8')).decode('utf-8')
+    return f"{ARTIST_ID_PREFIX}{base64_name}"
 
 def artist_id_to_name(id):
-    return id[len(ARTIST_ID_PREFIX):]
+    base64_id = id[len(ARTIST_ID_PREFIX):]
+    return base64.b64decode(base64_id.encode('utf-8')).decode('utf-8')
 
 def album_beetid_to_subid(id):
     return f"{ALBUM_ID_PREFIX}{id}"
