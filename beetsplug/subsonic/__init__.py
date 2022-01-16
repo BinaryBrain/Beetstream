@@ -213,6 +213,7 @@ def map_artist(artist_name):
         "id": artist_name_to_id(artist_name),
         "name": artist_name,
         # TODO
+        # "starred": "2021-07-03T06:15:28.757Z", # nothing if not starred
         "coverArt": "",
         "albumCount": 1,
         "artistImageUrl": "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg"
@@ -944,37 +945,14 @@ def cover_art_file():
 @app.route('/rest/getArtists', methods=["GET", "POST"])
 @app.route('/rest/getArtists.view', methods=["GET", "POST"])
 def all_artists():
-    res_format = request.values.get('f') or 'xml'
-    with g.lib.transaction() as tx:
-        rows = tx.query("SELECT DISTINCT albumartist FROM albums")
-    all_artists = [row[0] for row in rows]
-    all_artists.sort(key=lambda name: strip_accents(name).upper())
-
-    # TODO Proper index
-    if (is_json(res_format)):
-        return jsonpify(request, wrap_res("artists", {
-            "ignoredArticles": "The El La Los Las Le",
-            "index": [{
-                "name": "*",
-                "artist": list(map(map_artist, all_artists))
-            }]
-        }))
-    else:
-        root = get_xml_root()
-        artists_xml = ET.SubElement(root, 'artists')
-        artists_xml.set('ignoredArticles', "The El La Los Las Le")
-        index_xml = ET.SubElement(artists_xml, 'index')
-        index_xml.set('name', "*")
-
-        for artist in all_artists:
-            a = ET.SubElement(index_xml, 'artist')
-            map_artist_xml(a, artist)
-
-        return Response(xml_to_string(root), mimetype='text/xml')
+    return get_artists("artists")
 
 @app.route('/rest/getIndexes', methods=["GET", "POST"])
 @app.route('/rest/getIndexes.view', methods=["GET", "POST"])
 def indexes():
+    return get_artists("indexes")
+
+def get_artists(version):
     res_format = request.values.get('f') or 'xml'
     with g.lib.transaction() as tx:
         rows = tx.query("SELECT DISTINCT albumartist FROM albums")
@@ -998,14 +976,14 @@ def indexes():
                 "artist": list(map(map_artist, artist_names))
             })
 
-        return jsonpify(request, wrap_res("indexes", {
+        return jsonpify(request, wrap_res(version, {
             "ignoredArticles": "",
             "lastModified": int(time.time() * 1000),
             "index": indicies
         }))
     else:
         root = get_xml_root()
-        indexes_xml = ET.SubElement(root, 'indexes')
+        indexes_xml = ET.SubElement(root, version)
         indexes_xml.set('ignoredArticles', "")
 
         indicies = []
