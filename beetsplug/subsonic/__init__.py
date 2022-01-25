@@ -1199,7 +1199,7 @@ def user():
 
 @app.route('/')
 def home():
-    return flask.render_template('index.html')
+    return "Beets-SubSonic-API running"
 
 
 # Plugin hook.
