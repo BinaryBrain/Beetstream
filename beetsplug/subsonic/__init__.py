@@ -640,8 +640,8 @@ def search(version):
     songCount = int(request.values.get('songCount') or 20)
     songOffset = int(request.values.get('songOffset') or 0)
 
-    songs = handleSizeAndOffset(list(g.lib.items("title:{}".format(query))), songCount, songOffset)
-    albums = handleSizeAndOffset(list(g.lib.albums("album:{}".format(query))), albumCount, albumOffset)
+    songs = handleSizeAndOffset(list(g.lib.items("title:{}".format(query.replace("'", "\\'")))), songCount, songOffset)
+    albums = handleSizeAndOffset(list(g.lib.albums("album:{}".format(query.replace("'", "\\'")))), albumCount, albumOffset)
 
     with g.lib.transaction() as tx:
         rows = tx.query("SELECT DISTINCT albumartist FROM albums")
@@ -795,7 +795,7 @@ def songs_by_genre():
     count = int(request.values.get('count') or 10)
     offset = int(request.values.get('offset') or 0)
 
-    songs = handleSizeAndOffset(list(g.lib.items('genre:' + genre)), count, offset)
+    songs = handleSizeAndOffset(list(g.lib.items('genre:' + genre.replace("'", "\\'"))), count, offset)
 
     if (is_json(res_format)):
         return jsonpify(request, wrap_res("songsByGenre", {
@@ -1016,7 +1016,7 @@ def musicDirectory():
     if id.startswith(ARTIST_ID_PREFIX):
         artist_id = id
         artist_name = artist_id_to_name(artist_id)
-        albums = g.lib.albums(artist_name)
+        albums = g.lib.albums(artist_name.replace("'", "\\'"))
         albums = filter(lambda album: album.albumartist == artist_name, albums)
 
         if (is_json(res_format)):
@@ -1078,7 +1078,7 @@ def artist():
     res_format = request.values.get('f') or 'xml'
     artist_id = request.values.get('id')
     artist_name = artist_id_to_name(artist_id)
-    albums = g.lib.albums(artist_name)
+    albums = g.lib.albums(artist_name.replace("'", "\\'"))
     albums = filter(lambda album: album.albumartist == artist_name, albums)
 
     if (is_json(res_format)):
