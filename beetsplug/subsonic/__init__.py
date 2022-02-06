@@ -842,7 +842,7 @@ def get_album_list(version):
     elif sort_by == 'alphabeticalByArtist':
         albums.sort(key=lambda album: strip_accents(dict(album)['albumartist']).upper())
     elif sort_by == 'byGenre':
-        albums = filter(lambda album: dict(album)['genre'].lower() == genre.lower(), albums)
+        albums = list(filter(lambda album: dict(album)['genre'].lower() == genre.lower(), albums))
     elif sort_by == 'byYear':
         # TODO use month and day data to sort
         if fromYear <= toYear:
