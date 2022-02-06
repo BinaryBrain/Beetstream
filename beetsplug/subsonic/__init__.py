@@ -35,6 +35,7 @@ from math import ceil
 from flask_cors import CORS
 from PIL import Image
 import io
+from xml.dom import minidom
 
 ARTIST_ID_PREFIX = "1"
 ALBUM_ID_PREFIX = "2"
@@ -76,7 +77,7 @@ def get_xml_root():
 
 def xml_to_string(xml):
     # Add declaration: <?xml version="1.0" encoding="UTF-8"?>
-    return ET.tostring(xml, encoding='unicode', method='xml', xml_declaration=True)
+    return minidom.parseString(ET.tostring(xml, encoding='unicode', method='xml', xml_declaration=True)).toprettyxml()
 
 def map_album(album):
     album = dict(album)
