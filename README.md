@@ -42,7 +42,7 @@ All clients below are working with this server. By "working", it means one can u
 ### Android
 
 - [Subsonic](https://play.google.com/store/apps/details?id=net.sourceforge.subsonic.androidapp) (official app)
-- [DSub](https://play.google.com/store/apps/details?id=github.daneren2005.dsub) (getGenres seems broken)
+- [DSub](https://play.google.com/store/apps/details?id=github.daneren2005.dsub)
 - [Audinaut](https://play.google.com/store/apps/details?id=net.nullsum.audinaut)
 - [Ultrasonic](https://play.google.com/store/apps/details?id=org.moire.ultrasonic)
 - [GoSONIC](https://play.google.com/store/apps/details?id=com.readysteadygosoftware.gosonic)
