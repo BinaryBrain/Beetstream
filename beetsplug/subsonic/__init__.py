@@ -693,34 +693,6 @@ def music_folder():
 
         return Response(xml_to_string(root), mimetype='text/xml')
 
-
-@app.route('/item/query/<query:queries>', methods=["GET", "DELETE", "PATCH"])
-@resource_query('items', patchable=True)
-def item_query(queries):
-    return g.lib.items(queries)
-
-
-@app.route('/item/path/<everything:path>')
-def item_at_path(path):
-    query = beets.library.PathQuery('path', path.encode('utf-8'))
-    item = g.lib.items(query).get()
-    if item:
-        return jsonpify(request, _rep(item))
-    else:
-        return flask.abort(404)
-
-
-@app.route('/item/values/<string:key>')
-def item_unique_field_values(key):
-    sort_key = flask.request.values.get('sort_key', key)
-    try:
-        values = _get_unique_table_field_values(beets.library.Item, key,
-                                                sort_key)
-    except KeyError:
-        return flask.abort(404)
-    return jsonpify(request, values=values)
-
-
 # Albums
 @app.route('/rest/getGenres', methods=["GET", "POST"])
 @app.route('/rest/getGenres.view', methods=["GET", "POST"])
@@ -1132,18 +1104,6 @@ def artistInfo2():
         largeImageUrl.text = ""
 
         return Response(xml_to_string(root), mimetype='text/xml')
-
-# Library information.
-
-@app.route('/stats')
-def stats():
-    with g.lib.transaction() as tx:
-        item_rows = tx.query("SELECT COUNT(*) FROM items")
-        album_rows = tx.query("SELECT COUNT(*) FROM albums")
-    return jsonpify(request, {
-        'items': item_rows[0][0],
-        'albums': album_rows[0][0],
-    })
 
 # Users.
 
