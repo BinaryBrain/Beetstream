@@ -1,6 +1,6 @@
 # Beets-SubSonic-API
 
-[Beets.io](https://beets.io) plugin that expose [SubSonic API endpoints](http://www.subsonic.org/pages/api.jsp).
+[Beets.io](https://beets.io) plugin that expose [SubSonic API endpoints](http://www.subsonic.org/pages/api.jsp), allowing you to stream your music everywhere.
 
 ## Motivation
 
