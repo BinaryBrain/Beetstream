@@ -50,7 +50,9 @@ All clients below are working with this server. By "working", it means one can u
 - [Music Stash](https://play.google.com/store/apps/details?id=com.ghenry22.mymusicstash)
 - [substreamer](https://play.google.com/store/apps/details?id=com.ghenry22.substream2)
 
-Some apps are slow because pagination is not properly handled yet.
+### Desktop
+
+- [Clementine](https://www.clementine-player.org)
 
 ### Web
 
