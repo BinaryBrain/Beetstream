@@ -2,10 +2,10 @@ from beetsplug.subsonic.utils import *
 from beetsplug.subsonic import app
 import flask
 from flask import g, request, Response
-from beets.random import random_objs
 import xml.etree.cElementTree as ET
 from PIL import Image
 import io
+from random import shuffle
 
 @app.route('/rest/getAlbum', methods=["GET", "POST"])
 @app.route('/rest/getAlbum.view', methods=["GET", "POST"])
@@ -46,7 +46,7 @@ def album_list_2():
 
 def get_album_list(version):
     res_format = request.values.get('f') or 'xml'
-    # TODO possibleTypes = ['random', 'frequent', 'recent', 'starred']
+    # TODO type == 'starred' and type == 'frequent'
     sort_by = request.values.get('type') or 'alphabeticalByName' # TODO
     size = int(request.values.get('size') or 10)
     offset = int(request.values.get('offset') or 0)
@@ -64,6 +64,8 @@ def get_album_list(version):
         albums.sort(key=lambda album: strip_accents(dict(album)['albumartist']).upper())
     elif sort_by == 'alphabeticalByArtist':
         albums.sort(key=lambda album: strip_accents(dict(album)['albumartist']).upper())
+    elif sort_by == 'recent':
+        albums.sort(key=lambda album: dict(album)['year'], reverse=True)
     elif sort_by == 'byGenre':
         albums = list(filter(lambda album: dict(album)['genre'].lower() == genre.lower(), albums))
     elif sort_by == 'byYear':
@@ -74,6 +76,8 @@ def get_album_list(version):
         else:
             albums = list(filter(lambda album: dict(album)['year'] >= toYear and dict(album)['year'] <= fromYear, albums))
             albums.sort(key=lambda album: int(dict(album)['year']), reverse=True)
+    elif sort_by == 'random':
+        shuffle(albums)
 
     albums = handleSizeAndOffset(albums, size, offset)
 
