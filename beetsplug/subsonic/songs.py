@@ -48,8 +48,17 @@ def songs_by_genre():
 @app.route('/rest/stream', methods=["GET", "POST"])
 @app.route('/rest/stream.view', methods=["GET", "POST"])
 def stream_song():
+    maxBitrate = int(request.values.get('maxBitRate') or 0) # TODO
+    format = request.values.get('format') #TODO
+    return stream(maxBitrate)
+
+@app.route('/rest/download', methods=["GET", "POST"])
+@app.route('/rest/download.view', methods=["GET", "POST"])
+def download_song():
+    return stream(0)
+
+def stream(maxBitrate):
     id = int(song_subid_to_beetid(request.values.get('id')))
-    maxBitrate = int(request.values.get('maxBitRate') or 0)
     item = g.lib.get_item(id)
 
     def generate():
