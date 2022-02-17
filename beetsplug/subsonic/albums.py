@@ -47,7 +47,7 @@ def album_list_2():
 def get_album_list(version):
     res_format = request.values.get('f') or 'xml'
     # TODO type == 'starred' and type == 'frequent'
-    sort_by = request.values.get('type') or 'alphabeticalByName' # TODO
+    sort_by = request.values.get('type') or 'alphabeticalByName'
     size = int(request.values.get('size') or 10)
     offset = int(request.values.get('offset') or 0)
     fromYear = int(request.values.get('fromYear') or 0)

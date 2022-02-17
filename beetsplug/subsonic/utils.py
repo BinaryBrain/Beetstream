@@ -5,6 +5,7 @@ import flask
 import json
 import base64
 import mimetypes
+import os
 import xml.etree.cElementTree as ET
 from math import ceil
 from xml.dom import minidom
@@ -125,6 +126,7 @@ def map_album_list_xml(xml, album):
 
 def map_song(song):
     song = dict(song)
+    path = song["path"].decode('utf-8')
     return {
         "id": song_beetid_to_subid(str(song["id"])),
         "parent": album_beetid_to_subid(str(song["album_id"])),
@@ -137,13 +139,13 @@ def map_song(song):
         "year": song["year"],
         "genre": song["genre"],
         "coverArt": album_beetid_to_subid(str(song["album_id"])) or "",
-        # TODO "size": 3612800,
-        "contentType": mimetypes.guess_type(song["path"].decode('utf-8'))[0],
+        "size": os.path.getsize(path),
+        "contentType": mimetypes.guess_type(path)[0],
         "suffix": song["format"].lower(),
         "duration": ceil(song["length"]),
         "bitRate": ceil(song["bitrate"]/1000),
-        "path": song["path"].decode('utf-8'),
-        "playCount": 1745, #TODO
+        "path": path,
+        "playCount": 1, #TODO
         "created": timestamp_to_iso(song["added"]),
         # "starred": "2019-10-23T04:41:17.107Z",
         "albumId": album_beetid_to_subid(str(song["album_id"])),
@@ -153,6 +155,7 @@ def map_song(song):
 
 def map_song_xml(xml, song):
     song = dict(song)
+    path = song["path"].decode('utf-8')
     xml.set("id", song_beetid_to_subid(str(song["id"])))
     xml.set("parent", album_beetid_to_subid(str(song["album_id"])))
     xml.set("isDir", "false")
@@ -164,12 +167,13 @@ def map_song_xml(xml, song):
     xml.set("year", str(song["year"]))
     xml.set("genre", song["genre"])
     xml.set("coverArt", album_beetid_to_subid(str(song["album_id"])) or "")
-    xml.set("contentType", mimetypes.guess_type(song["path"].decode('utf-8'))[0])
+    xml.set("size", str(os.path.getsize(path)))
+    xml.set("contentType", mimetypes.guess_type(path)[0])
     xml.set("suffix", song["format"].lower())
     xml.set("duration", str(ceil(song["length"])))
     xml.set("bitRate", str(ceil(song["bitrate"]/1000)))
-    xml.set("path", song["path"].decode('utf-8'))
-    xml.set("playCount", str(1745)) #TODO
+    xml.set("path", path)
+    xml.set("playCount", str(1)) #TODO
     xml.set("created", timestamp_to_iso(song["added"]))
     xml.set("albumId", album_beetid_to_subid(str(song["album_id"])))
     xml.set("artistId", artist_name_to_id(song["albumartist"]))
