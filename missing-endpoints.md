@@ -1,4 +1,4 @@
-# Missing endpoints
+# Missing Endpoints
 
 To be implemented:
 - `getArtistInfo`
