@@ -60,3 +60,8 @@ All clients below are working with this server. By "working", it means one can u
 - [SubFire](http://subfireplayer.net)
 
 _Currently supports a subset of API v1.16.1, avaiable as Json, Jsonp and XML._
+
+## Contributing
+
+There is still some [missing endpoints](missing-endpoints.md) and `TODO` in the code.
+Feel free to create some PR!
