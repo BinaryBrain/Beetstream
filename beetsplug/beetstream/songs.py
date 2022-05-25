@@ -1,5 +1,5 @@
-from beetsplug.subsonic.utils import *
-from beetsplug.subsonic import app
+from beetsplug.beetstream.utils import *
+from beetsplug.beetstream import app
 from flask import g, request, Response
 import mimetypes
 from beets.random import random_objs

@@ -1,5 +1,5 @@
-from beetsplug.subsonic.utils import *
-from beetsplug.subsonic import app
+from beetsplug.beetstream.utils import *
+from beetsplug.beetstream import app
 from flask import g, request, Response
 import xml.etree.cElementTree as ET
 

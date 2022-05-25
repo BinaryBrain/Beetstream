@@ -13,7 +13,7 @@
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
 
-"""Beets.io plugin that exposes SubSonic API endpoints."""
+"""Beetstream is a Beets.io plugin that exposes SubSonic API endpoints."""
 from beets.plugins import BeetsPlugin
 from beets import ui
 import flask
@@ -33,22 +33,22 @@ def before_request():
 
 @app.route('/')
 def home():
-    return "Beets-SubSonic-API running"
+    return "Beetstream server running"
 
-from beetsplug.subsonic.utils import *
-import beetsplug.subsonic.albums
-import beetsplug.subsonic.artists
-import beetsplug.subsonic.dummy
-import beetsplug.subsonic.search
-import beetsplug.subsonic.songs
-import beetsplug.subsonic.users
+from beetsplug.beetstream.utils import *
+import beetsplug.beetstream.albums
+import beetsplug.beetstream.artists
+import beetsplug.beetstream.dummy
+import beetsplug.beetstream.search
+import beetsplug.beetstream.songs
+import beetsplug.beetstream.users
 
 # Plugin hook.
-class SubSonicPlugin(BeetsPlugin):
+class BeetstreamPlugin(BeetsPlugin):
     def __init__(self):
-        super(SubSonicPlugin, self).__init__()
+        super(BeetstreamPlugin, self).__init__()
         self.config.add({
-            'host': u'127.0.0.1',
+            'host': u'0.0.0.0',
             'port': 8080,
             'cors': '*',
             'cors_supports_credentials': True,
@@ -57,7 +57,7 @@ class SubSonicPlugin(BeetsPlugin):
         })
 
     def commands(self):
-        cmd = ui.Subcommand('subsonic', help=u'expose a SubSonic API')
+        cmd = ui.Subcommand('beetstream', help=u'run Beetstream server, exposing SubSonic API')
         cmd.parser.add_option(u'-d', u'--debug', action='store_true',
                               default=False, help=u'debug mode')
 

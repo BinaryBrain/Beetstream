@@ -1,4 +1,4 @@
-from beetsplug.subsonic import ALBUM_ID_PREFIX, ARTIST_ID_PREFIX, SONG_ID_PREFIX
+from beetsplug.beetstream import ALBUM_ID_PREFIX, ARTIST_ID_PREFIX, SONG_ID_PREFIX
 import unicodedata
 from datetime import datetime
 import flask

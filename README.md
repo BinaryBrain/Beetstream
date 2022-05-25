@@ -1,6 +1,6 @@
-# Beets-SubSonic-API
+# Beetstream
 
-[Beets.io](https://beets.io) plugin that exposes [SubSonic API endpoints](http://www.subsonic.org/pages/api.jsp), allowing you to stream your music everywhere.
+Beetstream is a [Beets.io](https://beets.io) plugin that exposes [SubSonic API endpoints](http://www.subsonic.org/pages/api.jsp), allowing you to stream your music everywhere.
 
 ## Motivation
 
@@ -19,10 +19,26 @@ Requires Python 3.8 or newer.
 $ pip install -r requirements.txt
 ```
 
-3) Run with:
-
+3) Add the folder to your path (probably in `~/.bashrc` or `~/.zshrc`):
 ```
-$ beet subsonic
+export PYTHONPATH="${PYTHONPATH}:/home/username/Beetstream"
+```
+
+4) Enable the plugin for Beets in your config file `~/.config/beets/config.yaml`:
+```yaml
+plugins: beetstream
+```
+
+5) **Optional** You can change the host and port in your config file `~/.config/beets/config.yaml`. Here are the default values:
+```yaml
+beetstream:
+  host: 0.0.0.0
+  port: 8080
+```
+
+6) Run with:
+```
+$ beet beetstream
 ```
 
 ## Clients Configuration
