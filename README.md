@@ -16,27 +16,22 @@ Requires Python 3.8 or newer.
 2) Install the dependancies with:
 
 ```
-$ pip install -r requirements.txt
+$ pip install beetstream
 ```
 
-3) Add the folder to your path (probably in `~/.bashrc` or `~/.zshrc`):
-```
-export PYTHONPATH="${PYTHONPATH}:/home/username/Beetstream"
-```
-
-4) Enable the plugin for Beets in your config file `~/.config/beets/config.yaml`:
+3) Enable the plugin for Beets in your config file `~/.config/beets/config.yaml`:
 ```yaml
 plugins: beetstream
 ```
 
-5) **Optional** You can change the host and port in your config file `~/.config/beets/config.yaml`. Here are the default values:
+4) **Optional** You can change the host and port in your config file `~/.config/beets/config.yaml`. Here are the default values:
 ```yaml
 beetstream:
   host: 0.0.0.0
   port: 8080
 ```
 
-6) Run with:
+5) Run with:
 ```
 $ beet beetstream
 ```
@@ -49,7 +44,12 @@ There is currently no security whatsoever. You can put whatever user and passwor
 
 ### Server and Port
 
-Currently runs on port `8080`. i.e: `https://192.168.1.10:8080`.
+Currently runs on port `8080`. i.e: `https://192.168.1.10:8080`. You can configure it in `~/.config/beets/config.yaml`. Defaults are:
+```yaml
+beetstream:
+  host: 0.0.0.0
+  port: 8080
+```
 
 ## Supported Clients
 
