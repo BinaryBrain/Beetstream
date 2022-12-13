@@ -11,6 +11,13 @@ import xml.etree.cElementTree as ET
 from math import ceil
 from xml.dom import minidom
 
+EXTENSION_TO_MIME_TYPE_FALLBACK = {
+    '.aac'  : 'audio/aac',
+    '.flac' : 'audio/flac',
+    '.mp3'  : 'audio/mpeg',
+    '.ogg'  : 'audio/ogg',
+}
+
 def strip_accents(s):
     return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
 
@@ -223,8 +230,15 @@ def path_to_content_type(path):
 
     if result:
         return result
-    else:
-        raise RuntimeError(f"Unable to determine content type for {path}")
+
+    # our mimetype database didn't have information about this file extension.
+    base, ext = posixpath.splitext(path)
+    result = EXTENSION_TO_MIME_TYPE_FALLBACK.get(ext)
+
+    if result:
+        return result
+
+    raise RuntimeError(f"Unable to determine content type for {path}")
 
 def handleSizeAndOffset(collection, size, offset):
     if size is not None:
