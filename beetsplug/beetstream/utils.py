@@ -6,9 +6,17 @@ import json
 import base64
 import mimetypes
 import os
+import posixpath
 import xml.etree.cElementTree as ET
 from math import ceil
 from xml.dom import minidom
+
+EXTENSION_TO_MIME_TYPE_FALLBACK = {
+    '.aac'  : 'audio/aac',
+    '.flac' : 'audio/flac',
+    '.mp3'  : 'audio/mpeg',
+    '.ogg'  : 'audio/ogg',
+}
 
 def strip_accents(s):
     return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
@@ -140,7 +148,7 @@ def map_song(song):
         "genre": song["genre"],
         "coverArt": album_beetid_to_subid(str(song["album_id"])) or "",
         "size": os.path.getsize(path),
-        "contentType": mimetypes.guess_type(path)[0],
+        "contentType": path_to_content_type(path),
         "suffix": song["format"].lower(),
         "duration": ceil(song["length"]),
         "bitRate": ceil(song["bitrate"]/1000),
@@ -168,7 +176,7 @@ def map_song_xml(xml, song):
     xml.set("genre", song["genre"])
     xml.set("coverArt", album_beetid_to_subid(str(song["album_id"])) or "")
     xml.set("size", str(os.path.getsize(path)))
-    xml.set("contentType", mimetypes.guess_type(path)[0])
+    xml.set("contentType", path_to_content_type(path))
     xml.set("suffix", song["format"].lower())
     xml.set("duration", str(ceil(song["length"])))
     xml.set("bitRate", str(ceil(song["bitrate"]/1000)))
@@ -216,6 +224,21 @@ def song_beetid_to_subid(id):
 
 def song_subid_to_beetid(id):
     return id[len(SONG_ID_PREFIX):]
+
+def path_to_content_type(path):
+    result = mimetypes.guess_type(path)[0]
+
+    if result:
+        return result
+
+    # our mimetype database didn't have information about this file extension.
+    base, ext = posixpath.splitext(path)
+    result = EXTENSION_TO_MIME_TYPE_FALLBACK.get(ext)
+
+    if result:
+        return result
+
+    raise RuntimeError(f"Unable to determine content type for {path}")
 
 def handleSizeAndOffset(collection, size, offset):
     if size is not None:

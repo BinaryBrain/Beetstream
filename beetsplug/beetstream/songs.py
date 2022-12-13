@@ -1,7 +1,6 @@
 from beetsplug.beetstream.utils import *
 from beetsplug.beetstream import app
 from flask import g, request, Response
-import mimetypes
 from beets.random import random_objs
 import xml.etree.cElementTree as ET
 
@@ -67,7 +66,7 @@ def stream(maxBitrate):
             while data:
                 yield data
                 data = songFile.read(1024)
-    return Response(generate(), mimetype=mimetypes.guess_type(item.path.decode('utf-8'))[0])
+    return Response(generate(), mimetype=path_to_content_type(item.path.decode('utf-8')))
 
 @app.route('/rest/getRandomSongs', methods=["GET", "POST"])
 @app.route('/rest/getRandomSongs.view', methods=["GET", "POST"])
