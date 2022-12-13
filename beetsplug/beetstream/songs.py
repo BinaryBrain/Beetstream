@@ -54,7 +54,7 @@ def stream_song():
     id = int(song_subid_to_beetid(request.values.get('id')))
     item = g.lib.get_item(id)
 
-    return stream(item.path, maxBitrate)
+    return stream(item.path.decode('utf-8'), maxBitrate)
 
 @app.route('/rest/download', methods=["GET", "POST"])
 @app.route('/rest/download.view', methods=["GET", "POST"])
@@ -62,7 +62,7 @@ def download_song():
     id = int(song_subid_to_beetid(request.values.get('id')))
     item = g.lib.get_item(id)
 
-    return stream(item.path, 0)
+    return stream(item.path.decode('utf-8'), 0)
 
 @app.route('/rest/getRandomSongs', methods=["GET", "POST"])
 @app.route('/rest/getRandomSongs.view', methods=["GET", "POST"])
