@@ -1,4 +1,5 @@
 from beetsplug.beetstream.utils import *
+from beetsplug.beetstream.stream import stream
 from beetsplug.beetstream import app
 from flask import g, request, Response
 from beets.random import random_objs
@@ -49,24 +50,19 @@ def songs_by_genre():
 def stream_song():
     maxBitrate = int(request.values.get('maxBitRate') or 0) # TODO
     format = request.values.get('format') #TODO
-    return stream(maxBitrate)
+
+    id = int(song_subid_to_beetid(request.values.get('id')))
+    item = g.lib.get_item(id)
+
+    return stream(item.path, maxBitrate)
 
 @app.route('/rest/download', methods=["GET", "POST"])
 @app.route('/rest/download.view', methods=["GET", "POST"])
 def download_song():
-    return stream(0)
-
-def stream(maxBitrate):
     id = int(song_subid_to_beetid(request.values.get('id')))
     item = g.lib.get_item(id)
 
-    def generate():
-        with open(item.path, "rb") as songFile:
-            data = songFile.read(1024)
-            while data:
-                yield data
-                data = songFile.read(1024)
-    return Response(generate(), mimetype=path_to_content_type(item.path.decode('utf-8')))
+    return stream(item.path, 0)
 
 @app.route('/rest/getRandomSongs', methods=["GET", "POST"])
 @app.route('/rest/getRandomSongs.view', methods=["GET", "POST"])
