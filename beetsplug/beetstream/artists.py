@@ -77,14 +77,14 @@ def artist():
     if (is_json(res_format)):
         return jsonpify(request, wrap_res("artist", {
             "id": artist_id,
-            "artist_name": artist_name,
+            "name": artist_name,
             "album": list(map(map_album, albums))
         }))
     else:
         root = get_xml_root()
         artist_xml = ET.SubElement(root, 'artist')
         artist_xml.set("id", artist_id)
-        artist_xml.set("artist_name", artist_name)
+        artist_xml.set("name", artist_name)
 
         for album in albums:
             a = ET.SubElement(artist_xml, 'album')
