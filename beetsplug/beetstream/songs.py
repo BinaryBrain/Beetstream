@@ -1,6 +1,5 @@
 from beetsplug.beetstream.utils import *
-from beetsplug.beetstream.stream import stream
-from beetsplug.beetstream import app
+from beetsplug.beetstream import app, stream
 from flask import g, request, Response
 from beets.random import random_objs
 import xml.etree.cElementTree as ET
@@ -54,7 +53,10 @@ def stream_song():
     id = int(song_subid_to_beetid(request.values.get('id')))
     item = g.lib.get_item(id)
 
-    return stream(item.path.decode('utf-8'), maxBitrate)
+    if maxBitrate > 0 and item.bitrate > maxBitrate * 1000:
+        return stream.try_to_transcode(item.path.decode('utf-8'), maxBitrate)
+    else:
+        return stream.send_raw_file(item.path.decode('utf-8'))
 
 @app.route('/rest/download', methods=["GET", "POST"])
 @app.route('/rest/download.view', methods=["GET", "POST"])
@@ -62,7 +64,7 @@ def download_song():
     id = int(song_subid_to_beetid(request.values.get('id')))
     item = g.lib.get_item(id)
 
-    return stream(item.path.decode('utf-8'), 0)
+    return stream.send_raw_file(item.path.decode('utf-8'))
 
 @app.route('/rest/getRandomSongs', methods=["GET", "POST"])
 @app.route('/rest/getRandomSongs.view', methods=["GET", "POST"])
