@@ -18,7 +18,7 @@ def transcode_and_stream(filePath, maxBitrate):
         ffmpeg
         .input(filePath)
         .output('pipe:', format="mp3", audio_bitrate=maxBitrate * 1000)
-        .run_async(pipe_stdout=True)
+        .run_async(pipe_stdout=True, quiet=True)
     )
 
     return Response(outputStream.stdout, mimetype='audio/mpeg')
