@@ -48,14 +48,14 @@ def songs_by_genre():
 @app.route('/rest/stream.view', methods=["GET", "POST"])
 def stream_song():
     maxBitrate = int(request.values.get('maxBitRate') or 0)
-    format = request.values.get('format') #TODO
+    format = request.values.get('format')
 
     id = int(song_subid_to_beetid(request.values.get('id')))
     item = g.lib.get_item(id)
 
     itemPath = item.path.decode('utf-8')
 
-    if maxBitrate <= 0 or item.bitrate <= maxBitrate * 1000:
+    if format == 'raw' or maxBitrate <= 0 or item.bitrate <= maxBitrate * 1000:
         return stream.send_raw_file(itemPath)
     else:
         return stream.try_to_transcode(itemPath, maxBitrate)
