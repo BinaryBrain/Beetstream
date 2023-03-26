@@ -24,11 +24,15 @@ $ pip install beetstream
 plugins: beetstream
 ```
 
-4) **Optional** You can change the host and port in your config file `~/.config/beets/config.yaml`. Here are the default values:
+4) **Optional** You can change the host and port in your config file `~/.config/beets/config.yaml`.  
+You can also chose to never re-encode files even if the clients asks for it with the option `never_transcode: True`. This can be useful if you have a weak CPU or a lot of clients.
+
+Here are the default values:
 ```yaml
 beetstream:
   host: 0.0.0.0
   port: 8080
+  never_transcode: False
 ```
 
 5) Run with:

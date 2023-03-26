@@ -55,7 +55,7 @@ def stream_song():
 
     itemPath = item.path.decode('utf-8')
 
-    if format == 'raw' or maxBitrate <= 0 or item.bitrate <= maxBitrate * 1000:
+    if app.config['never_transcode'] or format == 'raw' or maxBitrate <= 0 or item.bitrate <= maxBitrate * 1000:
         return stream.send_raw_file(itemPath)
     else:
         return stream.try_to_transcode(itemPath, maxBitrate)

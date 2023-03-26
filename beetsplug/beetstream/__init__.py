@@ -54,6 +54,7 @@ class BeetstreamPlugin(BeetsPlugin):
             'cors_supports_credentials': True,
             'reverse_proxy': False,
             'include_paths': False,
+            'never_transcode': False,
         })
 
     def commands(self):
@@ -73,6 +74,7 @@ class BeetstreamPlugin(BeetsPlugin):
             app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 
             app.config['INCLUDE_PATHS'] = self.config['include_paths']
+            app.config['never_transcode'] = self.config['never_transcode']
 
             # Enable CORS if required.
             if self.config['cors']:
