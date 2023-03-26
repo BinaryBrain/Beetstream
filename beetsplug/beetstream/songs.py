@@ -1,5 +1,5 @@
 from beetsplug.beetstream.utils import *
-from beetsplug.beetstream import app
+from beetsplug.beetstream import app, stream
 from flask import g, request, Response
 from beets.random import random_objs
 import xml.etree.cElementTree as ET
@@ -47,26 +47,26 @@ def songs_by_genre():
 @app.route('/rest/stream', methods=["GET", "POST"])
 @app.route('/rest/stream.view', methods=["GET", "POST"])
 def stream_song():
-    maxBitrate = int(request.values.get('maxBitRate') or 0) # TODO
-    format = request.values.get('format') #TODO
-    return stream(maxBitrate)
+    maxBitrate = int(request.values.get('maxBitRate') or 0)
+    format = request.values.get('format')
+
+    id = int(song_subid_to_beetid(request.values.get('id')))
+    item = g.lib.get_item(id)
+
+    itemPath = item.path.decode('utf-8')
+
+    if format == 'raw' or maxBitrate <= 0 or item.bitrate <= maxBitrate * 1000:
+        return stream.send_raw_file(itemPath)
+    else:
+        return stream.try_to_transcode(itemPath, maxBitrate)
 
 @app.route('/rest/download', methods=["GET", "POST"])
 @app.route('/rest/download.view', methods=["GET", "POST"])
 def download_song():
-    return stream(0)
-
-def stream(maxBitrate):
     id = int(song_subid_to_beetid(request.values.get('id')))
     item = g.lib.get_item(id)
 
-    def generate():
-        with open(item.path, "rb") as songFile:
-            data = songFile.read(1024)
-            while data:
-                yield data
-                data = songFile.read(1024)
-    return Response(generate(), mimetype=path_to_content_type(item.path.decode('utf-8')))
+    return stream.send_raw_file(item.path.decode('utf-8'))
 
 @app.route('/rest/getRandomSongs', methods=["GET", "POST"])
 @app.route('/rest/getRandomSongs.view', methods=["GET", "POST"])
