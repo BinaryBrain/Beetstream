@@ -158,7 +158,8 @@ def map_song(song):
         # "starred": "2019-10-23T04:41:17.107Z",
         "albumId": album_beetid_to_subid(str(song["album_id"])),
         "artistId": artist_name_to_id(song["albumartist"]),
-        "type": "music"
+        "type": "music",
+        "discNumber": song["disc"]
     }
 
 def map_song_xml(xml, song):
@@ -186,6 +187,8 @@ def map_song_xml(xml, song):
     xml.set("albumId", album_beetid_to_subid(str(song["album_id"])))
     xml.set("artistId", artist_name_to_id(song["albumartist"]))
     xml.set("type", "music")
+    if song["disc"]:
+        xml.set("discNumber", str(song["disc"]))
 
 def map_artist(artist_name):
     return {
