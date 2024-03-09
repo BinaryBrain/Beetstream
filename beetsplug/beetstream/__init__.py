@@ -15,6 +15,7 @@
 
 """Beetstream is a Beets.io plugin that exposes SubSonic API endpoints."""
 from beets.plugins import BeetsPlugin
+from beets import config
 from beets import ui
 import flask
 from flask import g
@@ -39,6 +40,7 @@ from beetsplug.beetstream.utils import *
 import beetsplug.beetstream.albums
 import beetsplug.beetstream.artists
 import beetsplug.beetstream.dummy
+import beetsplug.beetstream.playlists
 import beetsplug.beetstream.search
 import beetsplug.beetstream.songs
 import beetsplug.beetstream.users
@@ -55,6 +57,7 @@ class BeetstreamPlugin(BeetsPlugin):
             'reverse_proxy': False,
             'include_paths': False,
             'never_transcode': False,
+            'playlist_dir': '',
         })
 
     def commands(self):
@@ -75,6 +78,10 @@ class BeetstreamPlugin(BeetsPlugin):
 
             app.config['INCLUDE_PATHS'] = self.config['include_paths']
             app.config['never_transcode'] = self.config['never_transcode']
+            playlist_dir = self.config['playlist_dir']
+            if not playlist_dir:
+                playlist_dir = config['smartplaylist']['playlist_dir'].get()
+            app.config['playlist_dir'] = playlist_dir
 
             # Enable CORS if required.
             if self.config['cors']:

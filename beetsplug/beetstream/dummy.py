@@ -41,20 +41,6 @@ def getLicense():
         l.set("trialExpires", "3000-01-01T00:00:00.000Z")
         return Response(xml_to_string(root), mimetype='text/xml')
 
-# TODO link with https://beets.readthedocs.io/en/stable/plugins/playlist.html
-@app.route('/rest/getPlaylists', methods=["GET", "POST"])
-@app.route('/rest/getPlaylists.view', methods=["GET", "POST"])
-def playlists():
-    res_format = request.values.get('f') or 'xml'
-    if (is_json(res_format)):
-        return jsonpify(request, wrap_res("playlists", {
-            "playlist": []
-        }))
-    else:
-        root = get_xml_root()
-        ET.SubElement(root, 'playlists')
-        return Response(xml_to_string(root), mimetype='text/xml')
-
 @app.route('/rest/getMusicFolders', methods=["GET", "POST"])
 @app.route('/rest/getMusicFolders.view', methods=["GET", "POST"])
 def music_folder():
