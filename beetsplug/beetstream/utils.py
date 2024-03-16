@@ -208,6 +208,22 @@ def map_artist_xml(xml, artist_name):
     xml.set("albumCount", "1")
     xml.set("artistImageUrl", "https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg")
 
+def map_playlist(playlist):
+    return {
+        'id': playlist.id,
+        'name': playlist.name,
+        'songCount': playlist.count,
+        'duration': playlist.duration,
+        'created': timestamp_to_iso(playlist.modified),
+    }
+
+def map_playlist_xml(xml, playlist):
+    xml.set('id', playlist.id)
+    xml.set('name', playlist.name)
+    xml.set('songCount', str(playlist.count))
+    xml.set('duration', str(ceil(playlist.duration)))
+    xml.set('created', timestamp_to_iso(playlist.modified))
+
 def artist_name_to_id(name):
     base64_name = base64.b64encode(name.encode('utf-8')).decode('utf-8')
     return f"{ARTIST_ID_PREFIX}{base64_name}"
