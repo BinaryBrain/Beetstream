@@ -2,31 +2,47 @@ import glob
 import os
 import pathlib
 import re
+import sys
+from flask import current_app as app
 from werkzeug.utils import safe_join
 
 extinf_regex = re.compile(r'^#EXTINF:([0-9]+)( [^,]+)?,[\s]*(.*)')
+highint32 = 1<<31
 
 class PlaylistProvider:
     def __init__(self, dir):
-        self._dir = dir
+        self.dir = dir
         self._playlists = {}
 
     def _refresh(self):
-        paths = glob.glob(os.path.join(self._dir, "**.m3u8"))
-        paths += glob.glob(os.path.join(self._dir, "**.m3u"))
+        self._playlists = {p.id: p for p in self._load_playlists()}
+        app.logger.debug(f"Loaded {len(self._playlists)} playlists")
+
+    def _load_playlists(self):
+        paths = glob.glob(os.path.join(self.dir, "**.m3u8"))
+        paths += glob.glob(os.path.join(self.dir, "**.m3u"))
         paths.sort()
-        self._playlists = {self._path2id(p): self._playlist(p) for p in paths}
+        for path in paths:
+            try:
+                yield self._playlist(path)
+            except Exception as e:
+                app.logger.error(f"Failed to load playlist {filepath}: {e}")
 
     def playlists(self):
         self._refresh()
-        ids = [k for k in self._playlists]
+        playlists = self._playlists
+        ids = [k for k, v in playlists.items() if v]
         ids.sort()
-        return [self._playlists[id] for id in ids]
+        return [playlists[id] for id in ids]
 
     def playlist(self, id):
-        self._refresh()
-        filepath = safe_join(self._dir, id)
-        return self._playlist(filepath)
+        filepath = safe_join(self.dir, id)
+        playlist = self._playlist(filepath)
+        if playlist.id not in self._playlists: #  add to cache
+            playlists = self._playlists.copy()
+            playlists[playlist.id] = playlist
+            self._playlists = playlists
+        return playlist
 
     def _playlist(self, filepath):
         id = self._path2id(filepath)
@@ -34,13 +50,14 @@ class PlaylistProvider:
         playlist = self._playlists.get(id)
         mtime = pathlib.Path(filepath).stat().st_mtime
         if playlist and playlist.modified == mtime:
-            return playlist # cached
+            return playlist # cached metadata
+        app.logger.debug(f"Loading playlist {filepath}")
         return Playlist(id, name, mtime, filepath)
 
     def _path2id(self, filepath):
-        return os.path.relpath(filepath, self._dir)
+        return os.path.relpath(filepath, self.dir)
 
-class Playlist():
+class Playlist:
     def __init__(self, id, name, modified, path):
         self.id = id
         self.name = name
@@ -48,12 +65,35 @@ class Playlist():
         self.path = path
         self.count = 0
         self.duration = 0
-        for item in parse_m3u_playlist(self.path):
+        artists = {}
+        max_artists = 10
+        for item in self.items():
             self.count += 1
             self.duration += item.duration
+            artist = Artist(item.title.split(' - ')[0])
+            found = artists.get(artist.key)
+            if found:
+                found.count += 1
+            else:
+                if len(artists) > max_artists:
+                    l = _sortedartists(artists)[:max_artists]
+                    artists = {a.key: a for a in l}
+                artists[artist.key] = artist
+        self.artists = ', '.join([a.name for a in _sortedartists(artists)])
 
     def items(self):
         return parse_m3u_playlist(self.path)
+
+def _sortedartists(artists):
+    l = [a for _,a in artists.items()]
+    l.sort(key=lambda a: (highint32-a.count, a.name))
+    return l
+
+class Artist:
+    def __init__(self, name):
+        self.key = name.lower()
+        self.name = name
+        self.count = 1
 
 def parse_m3u_playlist(filepath):
     '''

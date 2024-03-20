@@ -214,6 +214,7 @@ def map_playlist(playlist):
         'name': playlist.name,
         'songCount': playlist.count,
         'duration': playlist.duration,
+        'comment': playlist.artists,
         'created': timestamp_to_iso(playlist.modified),
     }
 
@@ -222,6 +223,7 @@ def map_playlist_xml(xml, playlist):
     xml.set('name', playlist.name)
     xml.set('songCount', str(playlist.count))
     xml.set('duration', str(ceil(playlist.duration)))
+    xml.set('comment', playlist.artists)
     xml.set('created', timestamp_to_iso(playlist.modified))
 
 def artist_name_to_id(name):
