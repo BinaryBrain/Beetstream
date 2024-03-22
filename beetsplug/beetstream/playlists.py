@@ -49,5 +49,5 @@ def _song(id):
     return map_song(g.lib.get_item(int(id)))
 
 def playlist_provider():
-    _playlist_provider._dir = app.config['playlist_dir']
+    _playlist_provider.dir = app.config['playlist_dir']
     return _playlist_provider

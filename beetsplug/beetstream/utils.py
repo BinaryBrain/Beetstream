@@ -11,11 +11,15 @@ import xml.etree.cElementTree as ET
 from math import ceil
 from xml.dom import minidom
 
+DEFAULT_MIME_TYPE = 'application/octet-stream'
 EXTENSION_TO_MIME_TYPE_FALLBACK = {
     '.aac'  : 'audio/aac',
     '.flac' : 'audio/flac',
     '.mp3'  : 'audio/mpeg',
+    '.mp4'  : 'audio/mp4',
+    '.m4a'  : 'audio/mp4',
     '.ogg'  : 'audio/ogg',
+    '.opus' : 'audio/opus',
 }
 
 def strip_accents(s):
@@ -214,6 +218,7 @@ def map_playlist(playlist):
         'name': playlist.name,
         'songCount': playlist.count,
         'duration': playlist.duration,
+        'comment': playlist.artists,
         'created': timestamp_to_iso(playlist.modified),
     }
 
@@ -222,6 +227,7 @@ def map_playlist_xml(xml, playlist):
     xml.set('name', playlist.name)
     xml.set('songCount', str(playlist.count))
     xml.set('duration', str(ceil(playlist.duration)))
+    xml.set('comment', playlist.artists)
     xml.set('created', timestamp_to_iso(playlist.modified))
 
 def artist_name_to_id(name):
@@ -257,7 +263,9 @@ def path_to_content_type(path):
     if result:
         return result
 
-    raise RuntimeError(f"Unable to determine content type for {path}")
+    flask.current_app.logger.warning(f"No mime type mapped for {ext} extension: {path}")
+
+    return DEFAULT_MIME_TYPE
 
 def handleSizeAndOffset(collection, size, offset):
     if size is not None:
