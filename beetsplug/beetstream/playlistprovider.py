@@ -3,6 +3,7 @@ import os
 import pathlib
 import re
 import sys
+from beetsplug.beetstream.utils import strip_accents
 from flask import current_app as app
 from werkzeug.utils import safe_join
 
@@ -91,7 +92,7 @@ def _sortedartists(artists):
 
 class Artist:
     def __init__(self, name):
-        self.key = name.lower()
+        self.key = strip_accents(name.lower())
         self.name = name
         self.count = 1
 
