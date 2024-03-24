@@ -111,37 +111,6 @@ def get_album_list(version):
 
             return Response(xml_to_string(root), mimetype='text/xml')
 
-@app.route('/rest/getCoverArt', methods=["GET", "POST"])
-@app.route('/rest/getCoverArt.view', methods=["GET", "POST"])
-def cover_art_file():
-    query_id = int(album_subid_to_beetid(request.values.get('id')) or -1)
-    size = request.values.get('size')
-    album = g.lib.get_album(query_id)
-
-    # Fallback on item id. Some apps use this
-    if not album:
-        item = g.lib.get_item(query_id)
-        if item is not None and item.album_id is not None:
-            album = g.lib.get_album(item.album_id)
-        else:
-            flask.abort(404)
-
-    if album and album.artpath:
-        image_path = album.artpath.decode('utf-8')
-
-        if size is not None and int(size) > 0:
-            size = int(size)
-            with Image.open(image_path) as image:
-                bytes_io = io.BytesIO()
-                image = image.resize((size, size))
-                image.convert('RGB').save(bytes_io, 'PNG')
-                bytes_io.seek(0)
-                return flask.send_file(bytes_io, mimetype='image/png')
-
-        return flask.send_file(image_path)
-    else:
-        return flask.abort(404)
-
 @app.route('/rest/getGenres', methods=["GET", "POST"])
 @app.route('/rest/getGenres.view', methods=["GET", "POST"])
 def genres():
