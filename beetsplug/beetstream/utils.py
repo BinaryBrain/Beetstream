@@ -146,7 +146,7 @@ def map_song(song):
         "track": song["track"],
         "year": song["year"],
         "genre": song["genre"],
-        "coverArt": album_beetid_to_subid(str(song["album_id"])) or "",
+        "coverArt": _cover_art_id(song),
         "size": os.path.getsize(path),
         "contentType": path_to_content_type(path),
         "suffix": song["format"].lower(),
@@ -175,7 +175,7 @@ def map_song_xml(xml, song):
     xml.set("track", str(song["track"]))
     xml.set("year", str(song["year"]))
     xml.set("genre", song["genre"])
-    xml.set("coverArt", album_beetid_to_subid(str(song["album_id"])) or "")
+    xml.set("coverArt", _cover_art_id(song)),
     xml.set("size", str(os.path.getsize(path)))
     xml.set("contentType", path_to_content_type(path))
     xml.set("suffix", song["format"].lower())
@@ -189,6 +189,11 @@ def map_song_xml(xml, song):
     xml.set("type", "music")
     if song["disc"]:
         xml.set("discNumber", str(song["disc"]))
+
+def _cover_art_id(song):
+    if song['album_id']:
+        return album_beetid_to_subid(str(song['album_id']))
+    return song_beetid_to_subid(str(song['id']))
 
 def map_artist(artist_name):
     return {

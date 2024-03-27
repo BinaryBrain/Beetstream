@@ -39,6 +39,7 @@ def home():
 from beetsplug.beetstream.utils import *
 import beetsplug.beetstream.albums
 import beetsplug.beetstream.artists
+import beetsplug.beetstream.coverart
 import beetsplug.beetstream.dummy
 import beetsplug.beetstream.playlists
 import beetsplug.beetstream.search
