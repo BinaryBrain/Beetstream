@@ -79,7 +79,7 @@ class BeetstreamPlugin(BeetsPlugin):
 
             app.config['INCLUDE_PATHS'] = self.config['include_paths']
             app.config['never_transcode'] = self.config['never_transcode']
-            playlist_dir = self.config['playlist_dir']
+            playlist_dir = self.config['playlist_dir'].get()
             if not playlist_dir:
                 try:
                     playlist_dir = config['smartplaylist']['playlist_dir'].get()
