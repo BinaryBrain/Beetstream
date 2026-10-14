@@ -85,3 +85,29 @@ _Currently supports a subset of API v1.16.1, avaiable as Json, Jsonp and XML._
 
 There is still some [missing endpoints](missing-endpoints.md) and `TODO` in the code.
 Feel free to create some PR!
+
+### Playlists
+
+Beetstream serves `.m3u` / `.m3u8` files from a directory as Subsonic
+playlists. Point it at one with:
+
+```yaml
+beetstream:
+    playlist_dir: /path/to/playlists
+```
+
+If unset, `smartplaylist.playlist_dir` is used instead, so a library already
+generating playlists with the `smartplaylist` plugin works with no extra
+configuration.
+
+Entries are resolved by an `id` attribute on the `#EXTINF` line, which is the
+beets item id:
+
+```
+#EXTM3U
+#EXTINF:238 id=4211,Daft Punk - Giorgio by Moroder
+/music/Daft Punk/Random Access Memories/03 Giorgio by Moroder.flac
+```
+
+Referencing item ids rather than paths means a playlist keeps working after
+files are renamed or moved.
